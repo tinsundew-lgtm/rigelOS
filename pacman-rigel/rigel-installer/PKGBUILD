@@ -1,0 +1,81 @@
+# Maintainer: Rigel Linux <https://github.com/tinSundew/rigel>
+# Contributor: tinSundew
+#
+# rigel-installer — TUI-установщик дистрибутива Rigel.
+# Сборка из исходников репозитория: ./installer/
+# После установки доступен: sudo rigel-install
+
+pkgname=rigel-installer
+pkgver=1.0
+pkgrel=1
+pkgdesc='Rigel TUI installer: Hyprland/KDE Plasma, btrfs, hardware auto-detection'
+arch=('any')
+url='https://github.com/tinSundew/rigel'
+license=('GPL3')
+depends=(
+  'whiptail'
+  'dialog'
+  'arch-install-scripts'
+  'gptfdisk'
+  'parted'
+  'btrfs-progs'
+  'e2fsprogs'
+  'dosfstools'
+  'pacman-contrib'
+  'snapper'
+  'snap-pac'
+)
+makedepends=()
+
+source=(
+  'rigel-install'
+  'lib/common.sh'
+  'lib/disk.sh'
+  'lib/bootloader.sh'
+  'lib/post.sh'
+  'lib/hwdetect.sh'
+  'lib/packages.sh'
+  'engine/rigel-engine.sh'
+  'apps.d/10-base.conf'
+  'apps.d/20-office.conf'
+  'apps.d/30-chat.conf'
+  'apps.d/40-media.conf'
+  'apps.d/50-peripherals.conf'
+  'apps.d/60-games.conf'
+  'apps.d/70-kernel.conf'
+  'apps.d/80-drivers.conf'
+  'apps.d/90-dev.conf'
+  'apps.d/95-server.conf'
+  'apps.d/99-manual-boot.conf'
+  'params.example.env'
+)
+
+sha256sums=('SKIP'
+            'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP'
+            'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP'
+            'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP'
+            'SKIP' 'SKIP')
+
+package() {
+  # Установщик — в /usr/share/rigel-installer/
+  local target="${pkgdir}/usr/share/rigel-installer"
+  install -d -m 0755 "$target"
+  install -d -m 0755 "$target/lib"
+  install -d -m 0755 "$target/engine"
+  install -d -m 0755 "$target/apps.d"
+
+  install -Dm755 rigel-install            "$target/rigel-install"
+  install -Dm644 lib/common.sh            "$target/lib/common.sh"
+  install -Dm644 lib/disk.sh              "$target/lib/disk.sh"
+  install -Dm644 lib/bootloader.sh        "$target/lib/bootloader.sh"
+  install -Dm644 lib/post.sh              "$target/lib/post.sh"
+  install -Dm644 lib/hwdetect.sh          "$target/lib/hwdetect.sh"
+  install -Dm644 lib/packages.sh          "$target/lib/packages.sh"
+  install -Dm755 engine/rigel-engine.sh   "$target/engine/rigel-engine.sh"
+  install -Dm644 apps.d/*.conf            "$target/apps.d/"
+  install -Dm644 params.example.env       "$target/params.example.env"
+
+  # Симлинк в PATH
+  install -d -m 0755 "${pkgdir}/usr/bin"
+  ln -sf /usr/share/rigel-installer/rigel-install "${pkgdir}/usr/bin/rigel-install"
+}

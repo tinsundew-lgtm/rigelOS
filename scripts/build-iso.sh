@@ -98,9 +98,15 @@ mkdir -p "$(dirname "$STAGE_DIR")"
 cp -a "$INSTALLER_SRC" "$STAGE_DIR"
 chmod +x "$STAGE_DIR/rigel-install" "$STAGE_DIR/engine/rigel-engine.sh" "$STAGE_DIR/selftest.sh" \
          "$STAGE_DIR/tests/logic-test.sh" 2>/dev/null || true
-chmod +x "$PROFILE/airootfs/usr/local/bin/rigel-install" \
-         "$PROFILE/airootfs/usr/local/bin/rigel-welcome" \
+
+# Права на скрипты в airootfs/bin (профиль хранит их обычными файлами).
+chmod +x "$PROFILE/airootfs/usr/local/bin/rigel-welcome" \
          "$PROFILE/airootfs/usr/local/bin/rigel-live-setup" 2>/dev/null || true
+# rigel-install в /usr/local/bin — обёртка (wrapper), которая экспортирует
+# INSTALLER_DIR и exec'ит настоящий установщик из /usr/local/lib/rigel-installer/.
+# Меню (rigel-welcome) вызывает установщик напрямую, поэтому обёртка — запасной путь
+# для ручного запуска «sudo rigel-install» в терминале.
+chmod +x "$PROFILE/airootfs/usr/local/bin/rigel-install" 2>/dev/null || true
 ok "установщик внутри профиля ($(find "$STAGE_DIR" -type f | wc -l) файлов)"
 
 # Каталог для локального репозитория: должен существовать, иначе mkarchiso

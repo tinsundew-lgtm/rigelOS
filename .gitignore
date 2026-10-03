@@ -8,5 +8,17 @@ work/
 iso/airootfs/usr/local/lib/rigel-installer/
 iso/airootfs/usr/local/share/rigel/repo/
 
+# Пользовательские пакеты: артефакты сборки
+packages/repo/
+packages/*/src/
+packages/*/pkg/
+packages/*/*.pkg.tar.*
+
+# Кастомные пакеты Rigel: артефакты сборки
+pacman-rigel/repo/
+pacman-rigel/*/src/
+pacman-rigel/*/pkg/
+pacman-rigel/*/*.pkg.tar.*
+
 # Логи установщика
 *.log

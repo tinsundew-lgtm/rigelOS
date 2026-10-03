@@ -65,7 +65,7 @@ read -rp "  Ваш выбор [1]: " choice
 case "${choice:-1}" in
     1)
         if [ -x /usr/local/lib/rigel-installer/rigel-install ]; then
-            sudo /usr/local/bin/rigel-install
+            sudo /usr/local/lib/rigel-installer/rigel-install
         else
             printf '\n  %sУстановщик недоступен — см. предупреждение выше.%s\n' "$c_err" "$c_off"
             read -rp "  Enter — вернуться в меню..." _
