@@ -103,6 +103,10 @@ chmod +x "$PROFILE/airootfs/usr/local/bin/rigel-install" \
          "$PROFILE/airootfs/usr/local/bin/rigel-live-setup" 2>/dev/null || true
 ok "установщик внутри профиля ($(find "$STAGE_DIR" -type f | wc -l) файлов)"
 
+# Каталог для локального репозитория: должен существовать, иначе mkarchiso
+# предупреждает, что не может выставить права из file_permissions.
+install -d -m 0755 "$PROFILE/airootfs/usr/local/share/rigel"
+
 # ------------------------------------------------- офлайн-репозиторий (опция)
 if [ "$DO_OFFLINE" = 1 ]; then
     msg "собираю локальный репозиторий на ISO (установка без интернета)"

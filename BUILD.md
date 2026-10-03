@@ -88,6 +88,17 @@ bash scripts/check-profile.sh
 `mkinitcpio-archiso`, расхождение ядер и записей загрузчика, мусорные подстановки
 вроде `%boot_dir%`, CRLF-переводы строк, скрипты без прав на запуск.
 
+**Проверка имён пакетов** (нужен Arch — например, контейнер или ваш Linux):
+
+```bash
+sudo scripts/check-packages.sh
+```
+
+Проверяет через `pacman --print` все списки проекта: `iso/packages.x86_64`, наборы
+целевой системы (`system_packages`, все варианты `RIGEL_DESKTOP`, драйверы GPU, ucode)
+и категории `installer/apps.d`. Одна опечатка в списке иначе стоит 10 минут сборки —
+здесь выясняется за минуту. В GitHub Actions этот шаг выполняется автоматически.
+
 ---
 
 ## Запись на флешку
@@ -126,7 +137,7 @@ sudo scripts/make-usb.sh /dev/sdX out/rigel-1.0-x86_64.iso
 |---|---|
 | ISO собирается, но не грузится | В BIOS включён Secure Boot — выключите. Или записали ISO как файл, а не DD-образом |
 | `mkarchiso: command not found` | `sudo pacman -S archiso` (или запустите через `scripts/build-in-docker.sh`) |
-| Сборка падает на «target not found» | В `packages.x86_64` опечатка или пакет только из AUR (`paru`, `yay`). Проверьте: `bash scripts/check-profile.sh` |
+| Сборка падает на «target not found» | Опечатка в имени пакета или пакет только из AUR (`paru`, `yay`). Проверьте: `bash scripts/check-profile.sh` (быстро, без сети) и `sudo scripts/check-packages.sh` (точно, нужен Arch) |
 | Сборка падает через 10 минут на pacstrap | Почти всегда пакеты записаны в одну строку. Должно быть по одному в строке |
 | `mkarchiso` ругается на loop device | Запускайте с `sudo` (или в Docker с `--privileged`) |
 | На флешке `rigel-install: не найден установщик` | ISO собран без `scripts/build-iso.sh` — соберите правильно |

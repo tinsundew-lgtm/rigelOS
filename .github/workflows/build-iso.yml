@@ -49,6 +49,8 @@ jobs:
               pacman-key --init >/dev/null 2>&1 || true
               pacman-key --populate archlinux >/dev/null 2>&1 || true
               pacman -Sy --noconfirm archlinux-keyring >/dev/null 2>&1 || true
+              # все имена пакетов проекта — до долгой сборки (одна опечатка = 10 минут впустую)
+              bash scripts/check-packages.sh
               # build-iso.sh сам поставит archiso, syslinux, grub, squashfs-tools и остальное
               bash scripts/build-iso.sh $EXTRA_ARGS
             '

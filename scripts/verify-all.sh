@@ -39,6 +39,15 @@ else
 fi
 
 echo
+echo "=== 4. Имена пакетов в репозиториях Arch ==="
+if command -v pacman >/dev/null 2>&1; then
+    bash "$ROOT/scripts/check-packages.sh" || FAIL=1
+else
+    echo "  [пропуск] pacman не найден: проверка имён пакетов возможна только на Arch"
+    echo "            (в GitHub Actions и в контейнере archlinux она выполняется автоматически)"
+fi
+
+echo
 if [ "$FAIL" -eq 0 ]; then
     echo "ИТОГ: все проверки пройдены."
 else

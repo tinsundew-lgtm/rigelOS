@@ -110,10 +110,10 @@ vulkan-icd-loader
 vulkan-tools
 libva-mesa-driver
 
-# --- загрузчики (нужны и для сборки, и для установки в целевую систему) ---
+# --- загрузчики live-ISO (нужны для сборки самого ISO) ---
+syslinux
 grub
 efibootmgr
-os-prober
 
 # --- принтеры и то, что обещано в офлайн-наборе приложений ---
 cups
