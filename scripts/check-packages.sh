@@ -62,7 +62,7 @@ msg "2/3 наборы целевой системы (installer/lib/packages.sh)"
 . "$REPO_ROOT/installer/lib/packages.sh"
 
 RIGEL_KERNELS="linux linux-lts"
-RIGEL_UCODE=auto
+RIGEL_UCODE=intel      # intel, а не auto — иначе ucode_packages() вызывает detect_cpu_vendor
 RIGEL_GPU=auto
 RIGEL_BOOTLOADER=auto
 RIGEL_ROOT_FS=btrfs

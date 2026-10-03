@@ -190,7 +190,7 @@ cups cups-pdf system-config-printer python-gobject gtk4 libadwaita pacman-contri
 # Hyprland есть на ISO → этот набор ставится без интернета.
 desktop_hyprland_packages() {
     printf '%s' "hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk hyprpaper hyprlock hypridle \
-waybar fuzzel mako swaync cliphist wl-clipboard grim slurp wlogout"
+waybar fuzzel mako swaync cliphist wl-clipboard grim slurp"
 }
 
 # KDE Plasma качается из сети (в ISO её нет: plasma-meta весит больше всего остального ISO).
