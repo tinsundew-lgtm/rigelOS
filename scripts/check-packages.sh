@@ -72,7 +72,7 @@ RIGEL_IS_LAPTOP=1
 RIGEL_VIRT=none
 check_list "база системы" "$(system_packages)"
 
-for d in hyprland plasma both minimal; do
+for d in hyprland gnome both minimal; do
     RIGEL_DESKTOP="$d"
     check_list "рабочий стол $d" "$(desktop_packages)"
 done

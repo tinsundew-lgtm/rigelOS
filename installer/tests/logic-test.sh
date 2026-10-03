@@ -131,18 +131,18 @@ case "$(detect_secureboot)" in enabled|disabled) t_ok "Secure Boot опреде�
 case "$(ucode_recommendation)" in intel-ucode|amd-ucode|нет) t_ok "ucode: $(ucode_recommendation)" ;; *) t_bad "ucode_recommendation сломан" ;; esac
 
 echo
-echo "=== 10. Рабочий стол: Hyprland / KDE Plasma ==="
+echo "=== 10. Рабочий стол: Hyprland / GNOME ==="
 RIGEL_DESKTOP=hyprland
 case "$(desktop_packages)" in *hyprland*) t_ok "hyprland: Hyprland в наборе" ;; *) t_bad "hyprland: нет пакета hyprland" ;; esac
-case "$(desktop_packages)" in *plasma-meta*) t_bad "hyprland: не должен тянуть Plasma" ;; *) t_ok "hyprland: Plasma не тянется" ;; esac
+case "$(desktop_packages)" in *gnome-shell*) t_bad "hyprland: не должен тянуть GNOME" ;; *) t_ok "hyprland: GNOME не тянется" ;; esac
 t_check "hyprland ставится офлайн" "$(desktop_needs_network && echo нужна-сеть || echo офлайн)" "офлайн"
-RIGEL_DESKTOP=plasma
-case "$(desktop_packages)" in *plasma-meta*) t_ok "plasma: есть plasma-meta" ;; *) t_bad "plasma: нет plasma-meta" ;; esac
-case "$(desktop_packages)" in *sddm*) t_ok "plasma: есть sddm (менеджер входа)" ;; *) t_bad "plasma: нет sddm" ;; esac
-case "$(desktop_packages)" in *hyprland*) t_bad "plasma: не должен тянуть Hyprland" ;; *) t_ok "plasma: Hyprland не тянется" ;; esac
-t_check "plasma требует сеть" "$(desktop_needs_network && echo нужна-сеть || echo офлайн)" "нужна-сеть"
+RIGEL_DESKTOP=gnome
+case "$(desktop_packages)" in *gnome-shell*) t_ok "gnome: есть gnome-shell" ;; *) t_bad "gnome: нет gnome-shell" ;; esac
+case "$(desktop_packages)" in *sddm*) t_ok "gnome: есть sddm (менеджер входа)" ;; *) t_bad "gnome: нет sddm" ;; esac
+case "$(desktop_packages)" in *hyprland*) t_bad "gnome: не должен тянуть Hyprland" ;; *) t_ok "gnome: Hyprland не тянется" ;; esac
+t_check "gnome требует сеть" "$(desktop_needs_network && echo нужна-сеть || echo офлайн)" "нужна-сеть"
 RIGEL_DESKTOP=both
-case "$(desktop_packages)" in *plasma-meta*) t_ok "both: есть Plasma" ;; *) t_bad "both: нет Plasma" ;; esac
+case "$(desktop_packages)" in *gnome-shell*) t_ok "both: есть GNOME" ;; *) t_bad "both: нет GNOME" ;; esac
 case "$(desktop_packages)" in *hyprland*) t_ok "both: есть Hyprland" ;; *) t_bad "both: нет Hyprland" ;; esac
 case "$(desktop_packages)" in *sddm*) t_ok "both: есть sddm" ;; *) t_bad "both: нет sddm" ;; esac
 RIGEL_DESKTOP=minimal
@@ -150,7 +150,7 @@ t_check "minimal: браузер и терминал" "$(desktop_packages)" "kit
 RIGEL_DESKTOP=none
 t_check "none: пустой набор" "$(desktop_packages)" ""
 aur=""
-for d in hyprland plasma both minimal; do
+for d in hyprland gnome both minimal; do
     RIGEL_DESKTOP="$d"
     for p in $(desktop_packages); do
         case "$p" in paru|yay|aura|trizen|pamac|pacaur) aur="$aur $d:$p" ;; esac
@@ -162,10 +162,10 @@ if ( RIGEL_DISK=/dev/sda; RIGEL_DESKTOP=windows; RIGEL_ROOT_PASSWORD=p; RIGEL_US
 else
     t_ok "неизвестный RIGEL_DESKTOP отвергнут"
 fi
-if ( RIGEL_DISK=/dev/sda; RIGEL_DESKTOP=plasma; RIGEL_ROOT_PASSWORD=p; RIGEL_USER_PASSWORD=p; validate_params ) >/dev/null 2>&1; then
-    t_ok "RIGEL_DESKTOP=plasma проходит валидацию"
+if ( RIGEL_DISK=/dev/sda; RIGEL_DESKTOP=gnome; RIGEL_ROOT_PASSWORD=p; RIGEL_USER_PASSWORD=p; validate_params ) >/dev/null 2>&1; then
+    t_ok "RIGEL_DESKTOP=gnome проходит валидацию"
 else
-    t_bad "RIGEL_DESKTOP=plasma отвергнут валидацией"
+    t_bad "RIGEL_DESKTOP=gnome отвергнут валидацией"
 fi
 RIGEL_DESKTOP=hyprland
 

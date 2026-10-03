@@ -58,21 +58,21 @@ systemctl enable bluetooth 2>/dev/null || true
 [ "${RIGEL_TRIM:-0}" = "1" ] && systemctl enable fstrim.timer
 
 # ---------------------------------------------------------------- рабочий стол
-# plasma/both — графический вход через SDDM; hyprland — автовход на tty1 без DM.
+# gnome/both — графический вход через SDDM; hyprland — автовход на tty1 без DM.
 case "$RIGEL_DESKTOP" in
-    plasma|both)
+    gnome|both)
         systemctl enable sddm
         if [ "$RIGEL_AUTOLOGIN" = "1" ]; then
             install -d -m 0755 /etc/sddm.conf.d
             cat >/etc/sddm.conf.d/10-rigel-autologin.conf <<SDDMCONF
 [Autologin]
 User=$RIGEL_USERNAME
-Session=plasma
+Session=gnome
 Relogin=false
 SDDMCONF
-            log "Plasma: SDDM включён, автовход для $RIGEL_USERNAME"
+            log "GNOME: SDDM включён, автовход для $RIGEL_USERNAME"
         else
-            log "Plasma: SDDM включён, вход по паролю"
+            log "GNOME: SDDM включён, вход по паролю"
         fi
         if [ "$RIGEL_DESKTOP" = "both" ]; then
             log "Hyprland тоже установлен — он доступен в меню сеансов SDDM"

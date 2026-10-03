@@ -7,9 +7,9 @@ RIGEL_ISO_REPO_DIR="${RIGEL_ISO_REPO_DIR:-/usr/local/share/rigel/repo}"
 RIGEL_ONLINE_RESOLVED=0
 
 # --------------------------------------------------- сеть, зеркала, pacman.conf
-# Plasma (plasma-meta) не лежит на флешке — её обязательно надо качать из сети.
+# GNOME (gnome-shell) не лежит на флешке — её обязательно надо качать из сети.
 desktop_needs_network() {
-    case "${RIGEL_DESKTOP:-hyprland}" in plasma|both) return 0 ;; *) return 1 ;; esac
+    case "${RIGEL_DESKTOP:-hyprland}" in gnome|both) return 0 ;; *) return 1 ;; esac
 }
 
 resolve_online() {
@@ -17,7 +17,7 @@ resolve_online() {
     else RIGEL_ONLINE_RESOLVED=0; warn "сети нет — устанавливать можно только офлайн-набор"; fi
     RIGEL_ONLINE="$RIGEL_ONLINE_RESOLVED"
     if desktop_needs_network && [ "$RIGEL_ONLINE_RESOLVED" != "1" ]; then
-        die "выбран рабочий стол KDE Plasma (RIGEL_DESKTOP=$RIGEL_DESKTOP), но его нет на флешке: plasma-meta весит больше всего остального ISO.
+        die "выбран рабочий стол GNOME (RIGEL_DESKTOP=$RIGEL_DESKTOP), но его нет на флешке: gnome-shell весит больше всего остального ISO.
    Что делать: подключите сеть (кабель или Wi-Fi через nmtui) и запустите установку снова,
    либо выберите Hyprland — он ставится без интернета."
     fi
@@ -193,25 +193,18 @@ desktop_hyprland_packages() {
 waybar fuzzel mako swaync cliphist wl-clipboard grim slurp"
 }
 
-# KDE Plasma качается из сети (в ISO её нет: plasma-meta весит больше всего остального ISO).
-# sddm в plasma-meta не входит — добавляем отдельно.
-desktop_plasma_packages() {
-    printf '%s' "plasma-meta sddm konsole dolphin ark gwenview okular spectacle kde-gtk-config \
-xdg-desktop-portal-kde plasma-nm plasma-pa bluedevil powerdevil breeze-gtk kscreen print-manager"
+# GNOME качается из сети (на ISO её нет: gnome-shell с зависимостями весит много).
+desktop_gnome_packages() {
+    printf '%s' "gnome-shell gnome-session gnome-control-center gnome-terminal nautilus gedit evince eog \
+gnome-software gnome-tweaks adwaita-icon-theme gnome-themes-extra sddm"
 }
 
-# Рабочий стол целевой системы:
-#   hyprland — лёгкий, ставится офлайн
-#   plasma   — KDE Plasma (нужна сеть)
-#   both     — оба: Plasma как основной, Hyprland в меню сеансов
-#   minimal  — браузер, файлы, терминал
-#   none     — чистая консоль
 desktop_packages() {
     case "$RIGEL_DESKTOP" in
         none)    printf '' ;;
         minimal) printf 'kitty thunar firefox' ;;
-        plasma)  printf '%s %s' "$(desktop_plasma_packages)" "$(desktop_common_packages)" ;;
-        both)    printf '%s %s %s' "$(desktop_plasma_packages)" "$(desktop_hyprland_packages)" "$(desktop_common_packages)" ;;
+        gnome)   printf '%s %s' "$(desktop_gnome_packages)" "$(desktop_common_packages)" ;;
+        both)    printf '%s %s %s' "$(desktop_gnome_packages)" "$(desktop_hyprland_packages)" "$(desktop_common_packages)" ;;
         *)       printf '%s %s' "$(desktop_hyprland_packages)" "$(desktop_common_packages)" ;;
     esac
 }

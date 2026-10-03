@@ -80,7 +80,7 @@ apply_defaults() {
     : "${RIGEL_UCODE:=auto}"              # auto | intel | amd | none
     : "${RIGEL_GPU:=auto}"                # auto | nvidia-open | nvidia | mesa
     : "${RIGEL_BOOTLOADER:=auto}"         # auto | systemd-boot | grub
-    : "${RIGEL_DESKTOP:=hyprland}"        # hyprland | plasma | both | minimal | none
+    : "${RIGEL_DESKTOP:=hyprland}"        # hyprland | gnome | both | minimal | none
     : "${RIGEL_APPS_BASE:=}"              # id категорий через пробел
     : "${RIGEL_APPS_PRO:=}"
     : "${RIGEL_ONLINE:=auto}"             # auto | 1 | 0
@@ -120,8 +120,8 @@ validate_params() {
     case "$RIGEL_HOME_MODE" in separate|none) : ;; *) die "RIGEL_HOME_MODE: separate или none" ;; esac
     case "$RIGEL_PART_MODE" in auto|wipe|manual) : ;; *) die "RIGEL_PART_MODE: auto | wipe | manual" ;; esac
     case "$RIGEL_DESKTOP" in
-        hyprland|plasma|both|minimal|none) : ;;
-        *) die "RIGEL_DESKTOP: допустимо hyprland | plasma | both | minimal | none (сейчас: $RIGEL_DESKTOP)" ;;
+        hyprland|gnome|both|minimal|none) : ;;
+        *) die "RIGEL_DESKTOP: допустимо hyprland | gnome | both | minimal | none (сейчас: $RIGEL_DESKTOP)" ;;
     esac
 }
 

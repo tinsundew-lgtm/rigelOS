@@ -189,13 +189,13 @@ main_flow() {
     RIGEL_GPU="${choice:-auto}"
 
     # --- рабочий стол
-    # Plasma весит больше всего остального ISO, поэтому её надо качать из сети.
-    local plasma_desc="KDE Plasma — привычный, качается из сети"
-    online || plasma_desc="[НЕТ СЕТИ — пока недоступно] KDE Plasma"
+    # GNOME весит больше всего остального ISO, поэтому его надо качать из сети.
+    local gnome_desc="GNOME — привычный рабочий стол, качается из сети"
+    online || gnome_desc="[НЕТ СЕТИ — пока недоступно] GNOME"
     choice="$(ui_radio "Рабочий стол" "Что поставить в систему?" \
         "hyprland" "Hyprland — лёгкий, ставится прямо с флешки" ON \
-        "plasma"   "$plasma_desc" OFF \
-        "both"     "Оба: Plasma по умолчанию, Hyprland в меню сеансов" OFF \
+        "gnome"   "$gnome_desc" OFF \
+        "both"     "Оба: GNOME по умолчанию, Hyprland в меню сеансов" OFF \
         "minimal"  "Без рабочего стола: браузер и терминал" OFF \
         "none"     "Чистая консоль (сервер, отладка)" OFF)"
     RIGEL_DESKTOP="${choice:-hyprland}"
@@ -220,7 +220,7 @@ main_flow() {
     RIGEL_AUTOLOGIN=0
     local autologin_what="в систему"
     case "$RIGEL_DESKTOP" in
-        plasma|both) autologin_what="в KDE Plasma" ;;
+        gnome|both) autologin_what="в GNOME" ;;
         hyprland)    autologin_what="в Hyprland" ;;
     esac
     if ui_yesno "Автовход" "Входить $autologin_what автоматически, без пароля?
