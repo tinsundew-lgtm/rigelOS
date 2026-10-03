@@ -1,0 +1,9 @@
+# Rigel: сборка идёт на Linux, поэтому все текстовые файлы должны иметь LF.
+# Без этого shebang вида #!/usr/bin/env bash\r не работает («bad interpreter»).
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.iso binary
+*.zst binary

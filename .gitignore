@@ -1,0 +1,12 @@
+# Результаты сборки
+out/
+work/
+*.iso
+*.iso.sha256
+
+# Временный стейджинг (создаёт scripts/build-iso.sh из папки installer/)
+iso/airootfs/usr/local/lib/rigel-installer/
+iso/airootfs/usr/local/share/rigel/repo/
+
+# Логи установщика
+*.log

@@ -1,0 +1,12 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = bash
+Target = networkmanager
+Target = hyprland
+
+[Action]
+Description = Настройка живой системы Rigel (локали, ключи pacman, сервисы, initramfs)...
+When = PostTransaction
+Exec = /usr/bin/bash /usr/local/bin/rigel-live-setup

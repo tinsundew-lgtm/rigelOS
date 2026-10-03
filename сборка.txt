@@ -1,0 +1,12 @@
+Rigel — сборка ISO, коротко:
+
+  0) bash scripts/verify-all.sh                 проверки без сборки (работает и в Windows)
+  1) без своего Linux: GitHub → Actions → «Сборка ISO Rigel» → Run workflow → скачать rigel-iso
+  2) Docker (Windows): pwsh -File scripts\build-in-docker.ps1
+  3) на Arch Linux:    sudo scripts/build-iso.sh
+
+  Если PowerShell не даёт запускать .ps1:
+     powershell -ExecutionPolicy Bypass -File scripts\build-in-docker.ps1
+     powershell -ExecutionPolicy Bypass -File scripts\fix-line-endings.ps1
+
+Подробно — BUILD.md. Что уже сделано и что осталось — NEXT-STEPS.md.

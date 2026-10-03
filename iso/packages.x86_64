@@ -1,0 +1,133 @@
+# Rigel 1 «Orion» — пакеты внутри live-ISO.
+#
+# ВАЖНО: по одному пакету в строке. Несколько пакетов в одной строке pacman
+# воспринимает как одно длинное имя и сборка падает.
+#
+# Здесь только то, что нужно САМОЙ флешке (live-система + установщик).
+# Рабочий стол целевой системы ставит установщик: Hyprland — из ISO (офлайн),
+# KDE Plasma — из сети (plasma-meta весит больше, чем весь остальной ISO).
+#
+# Драйвер NVIDIA здесь СОЗНАТЕЛЬНО отсутствует: nvidia-open-dkms пришлось бы
+# собирать во время сборки ISO, а в live-режиме хватает nouveau/modesetting.
+# В целевую систему драйвер ставит установщик (см. installer/lib/packages.sh).
+
+# --- обязательное для archiso ---
+base
+mkinitcpio
+mkinitcpio-archiso
+archlinux-keyring
+linux
+linux-lts
+linux-firmware
+intel-ucode
+amd-ucode
+
+# --- установщик Rigel: разметка, форматирование, установка ---
+arch-install-scripts
+gptfdisk
+parted
+dosfstools
+e2fsprogs
+btrfs-progs
+exfatprogs
+ntfs-3g
+snapper
+snap-pac
+libnewt
+dialog
+sudo
+curl
+wget
+reflector
+
+# --- консольные инструменты live-режима ---
+nano
+vim
+less
+man-db
+man-pages
+bash-completion
+fastfetch
+inxi
+lshw
+usbutils
+pciutils
+dmidecode
+
+# --- сеть, звук, bluetooth ---
+networkmanager
+network-manager-applet
+bluez
+bluez-utils
+blueman
+pipewire
+pipewire-pulse
+pipewire-alsa
+wireplumber
+pavucontrol
+alsa-utils
+sof-firmware
+polkit
+polkit-gnome
+
+# --- живой рабочий стол (Hyprland) ---
+hyprland
+xdg-desktop-portal-hyprland
+xdg-desktop-portal-gtk
+hyprpaper
+hyprlock
+hypridle
+waybar
+fuzzel
+mako
+swaync
+cliphist
+wl-clipboard
+grim
+slurp
+wlogout
+kitty
+thunar
+file-roller
+gvfs
+gvfs-mtp
+udisks2
+udiskie
+nwg-look
+papirus-icon-theme
+ttf-jetbrains-mono-nerd
+noto-fonts
+noto-fonts-cjk
+noto-fonts-emoji
+ttf-dejavu
+brightnessctl
+playerctl
+firefox
+
+# --- графика и медиа ---
+mesa
+vulkan-icd-loader
+vulkan-tools
+libva-mesa-driver
+
+# --- загрузчики (нужны и для сборки, и для установки в целевую систему) ---
+grub
+efibootmgr
+os-prober
+
+# --- принтеры и то, что обещано в офлайн-наборе приложений ---
+cups
+cups-pdf
+system-config-printer
+libreoffice-fresh
+libreoffice-fresh-ru
+hunspell-ru
+mpv
+vlc
+
+# --- для будущего GUI-обновлятора rigel-update (фаза 3) ---
+python-gobject
+gtk4
+libadwaita
+pacman-contrib
+flatpak

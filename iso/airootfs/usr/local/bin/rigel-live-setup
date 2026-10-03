@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Rigel 1 «Orion» — настройка ЖИВОЙ системы. Запускается pacman-хуком
+# /etc/pacman.d/hooks/10-rigel-live.hook во время сборки ISO, внутри будущей
+# живой системы (hookdir указывает на airootfs, поэтому hook выполняется в нём).
+#
+# Скрипт идемпотентный: его можно запускать повторно руками.
+# Все ошибки глушатся намеренно — настройка живой среды не должна ломать сборку.
+
+set -uo pipefail
+
+log() { printf '[rigel-live-setup] %s\n' "$*"; }
+
+# --- 1. Локали -------------------------------------------------------------
+# Перезаписываем locale.gen сами: так результат не зависит от того, оставил ли
+# pacman наш файл при установке glibc.
+cat >/etc/locale.gen <<'EOF'
+en_US.UTF-8 UTF-8
+ru_RU.UTF-8 UTF-8
+EOF
+if command -v locale-gen >/dev/null 2>&1; then
+    locale-gen >/dev/null 2>&1 || log "locale-gen завершился с ошибкой"
+fi
+
+# --- 2. Ключи pacman -------------------------------------------------------
+# Нужны, чтобы в живой системе работал pacman -S с проверкой подписей.
+if command -v pacman-key >/dev/null 2>&1; then
+    pacman-key --init >/dev/null 2>&1 || true
+    pacman-key --populate archlinux >/dev/null 2>&1 || true
+fi
+
+# --- 3. pacman.conf живой системы -----------------------------------------
+# multilib (для Steam в целевой системе) + локальный репозиторий Rigel с ISO.
+cat >/etc/pacman.conf <<'EOF'
+[options]
+HoldPkg     = pacman glibc
+Architecture = auto
+Color
+ParallelDownloads = 5
+SigLevel    = Required DatabaseOptional
+LocalFileSigLevel = Optional
+
+[core]
+Include = /etc/pacman.d/mirrorlist
+
+[extra]
+Include = /etc/pacman.d/mirrorlist
+
+[multilib]
+Include = /etc/pacman.d/mirrorlist
+
+# Локальный репозиторий Rigel (пакеты кладёт на ISO scripts/build-iso.sh --offline).
+# Если репозитория нет — pacman просто сообщит об ошибке только при обращении к нему.
+[rigel-iso]
+SigLevel = Optional TrustAll
+Server = file:///usr/local/share/rigel/repo/$arch
+EOF
+
+# --- 4. Сервисы живой системы ---------------------------------------------
+for unit in NetworkManager.service bluetooth.service systemd-timesyncd.service; do
+    systemctl enable "$unit" >/dev/null 2>&1 || log "не удалось включить $unit"
+done
+
+# --- 5. root без пароля и имя живой системы -------------------------------
+passwd -d root >/dev/null 2>&1 || true
+printf 'rigel-live\n' >/etc/hostname
+install -d -m 0755 /usr/local/share/rigel
+
+# --- 6. initramfs ----------------------------------------------------------
+# В chroot образы ядер может не собрать автоматика — собираем явно.
+if command -v mkinitcpio >/dev/null 2>&1; then
+    mkinitcpio -P >/dev/null 2>&1 || log "mkinitcpio -P завершился с ошибкой (проверьте образы ядер!)"
+fi
+
+log "живая система настроена: локали, ключи, pacman.conf, сервисы, initramfs"
+exit 0

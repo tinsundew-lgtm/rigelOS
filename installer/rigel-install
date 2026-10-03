@@ -1,0 +1,303 @@
+#!/usr/bin/env bash
+# Rigel 1 «Orion» — TUI-установщик.
+#
+#   sudo rigel-install            графический TUI (whiptail/dialog)
+#   sudo rigel-install --text     текстовый режим (без whiptail — для отладки и серверов)
+#
+# Собирает ответы пользователя в файл параметров и запускает движок
+# (engine/rigel-engine.sh). Вся логика установки — в движке, здесь только интерфейс.
+
+set -uo pipefail
+
+INSTALLER_DIR="${INSTALLER_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+RIGEL_APPS_DIR="${RIGEL_APPS_DIR:-$INSTALLER_DIR/apps.d}"
+PARAMS_FILE="${PARAMS_FILE:-/run/rigel/params.env}"
+RIGEL_LOG="${RIGEL_LOG:-/var/log/rigel-install.log}"
+
+# shellcheck source=lib/common.sh
+. "$INSTALLER_DIR/lib/common.sh"
+# shellcheck source=lib/hwdetect.sh
+. "$INSTALLER_DIR/lib/hwdetect.sh"
+# shellcheck source=lib/packages.sh
+. "$INSTALLER_DIR/lib/packages.sh"
+
+USE_TUI=1
+[ "${1:-}" = "--text" ] && USE_TUI=0
+if [ "$USE_TUI" = "1" ] && ! have whiptail; then
+    warn "whiptail не найден (пакет libnewt) — переключаюсь в текстовый режим"
+    USE_TUI=0
+fi
+
+# ------------------------------------------------------------------ ввод/вывод
+ui_msg() {
+    local t="$1" m="$2"
+    if [ "$USE_TUI" = "1" ]; then whiptail --title "$t" --msgbox "$m" 24 78
+    else printf '\n=== %s ===\n%s\n' "$t" "$m"; read -rp "Enter — дальше..." _; fi
+}
+
+ui_yesno() {
+    local t="$1" m="$2"
+    if [ "$USE_TUI" = "1" ]; then whiptail --title "$t" --yesno "$m" 20 78
+    else printf '\n=== %s ===\n%s\n' "$t" "$m"; read -rp "[y/N] " a; [[ "$a" =~ ^[YyДд] ]]; fi
+}
+
+ui_input() {
+    local t="$1" m="$2" d="${3:-}" v
+    if [ "$USE_TUI" = "1" ]; then v="$(whiptail --title "$t" --inputbox "$m" 12 70 "$d" 3>&1 1>&2 2>&3)"
+    else read -rp "$m [$d]: " v; v="${v:-$d}"; fi
+    printf '%s' "$v"
+}
+
+ui_password() {
+    local t="$1" m="$2" v
+    if [ "$USE_TUI" = "1" ]; then v="$(whiptail --title "$t" --passwordbox "$m" 12 70 3>&1 1>&2 2>&3)"
+    else read -rsp "$m " v; echo >&2; fi
+    printf '%s' "$v"
+}
+
+ui_menu() {
+    local t="$1" m="$2"; shift 2
+    local v=""
+    if [ "$USE_TUI" = "1" ]; then
+        v="$(whiptail --title "$t" --menu "$m" 22 78 12 "$@" 3>&1 1>&2 2>&3)"
+    else
+        printf '\n=== %s ===\n%s\n' "$t" "$m"
+        local i=1; local -a tags=()
+        while [ $# -gt 0 ]; do printf '  %d) %-22s %s\n' "$i" "$1" "$2"; tags+=("$1"); i=$((i+1)); shift 2; done
+        read -rp "номер: " n; v="${tags[$((n-1))]:-}"
+    fi
+    printf '%s' "$v"
+}
+
+ui_radio() {
+    local t="$1" m="$2"; shift 2
+    local v=""
+    if [ "$USE_TUI" = "1" ]; then
+        v="$(whiptail --title "$t" --radiolist "$m" 22 78 12 "$@" 3>&1 1>&2 2>&3)"
+    else
+        printf '\n=== %s ===\n%s\n' "$t" "$m"
+        local i=1; local -a tags=()
+        while [ $# -gt 0 ]; do
+            local tag="$1" desc="$2" st="$3"; shift 3
+            printf '  %d) %-18s %s%s\n' "$i" "$tag" "$desc" "$([ "$st" = ON ] && echo '   ← по умолчанию')"
+            tags+=("$tag"); i=$((i+1))
+        done
+        read -rp "номер: " n; v="${tags[$((n-1))]:-}"
+    fi
+    printf '%s' "$v"
+}
+
+# checklist категорий приложений из apps.d
+ui_checklist_from_apps() {
+    local tab="$1"
+    local id app_tab title online desc state
+    local -a args=() ids=()
+    while IFS='|' read -r id app_tab title online desc; do
+        [ "$app_tab" = "$tab" ] || continue
+        [ "$online" = "1" ] && desc="[нужен интернет] $desc"
+        args+=("$id" "$title — $desc" OFF)
+        ids+=("$id")
+    done < <(list_apps | sort)
+
+    [ ${#ids[@]} -gt 0 ] || { printf ''; return 0; }
+
+    local selected=""
+    if [ "$USE_TUI" = "1" ]; then
+        selected="$(whiptail --title "Приложения: вкладка $tab" --checklist \
+            "Отметьте нужное пробелом. Пустой выбор = минимальная система." 24 90 14 "${args[@]}" 3>&1 1>&2 2>&3)" || selected=""
+    else
+        printf '\n=== Вкладка %s ===\n' "$tab"
+        local i=1 j=0 n=${#args[@]}
+        while [ $j -lt "$n" ]; do
+            printf '  %d) %-14s %s\n' "$i" "${args[$j]}" "${args[$((j+1))]}"
+            i=$((i+1)); j=$((j+3))
+        done
+        read -rp "номера через пробел (Enter — ничего): " nums
+        for num in $nums; do selected="$selected ${ids[$((num-1))]:-}"; done
+    fi
+    printf '%s' "$(printf '%s' "$selected" | tr -d '"')"
+}
+
+# ------------------------------------------------------------------ диски
+list_disks() {
+    local live_src="" live_disk=""
+    if [ -e /run/archiso/bootmnt ]; then
+        live_src="$(findmnt -rno SOURCE /run/archiso/bootmnt 2>/dev/null || true)"
+        [ -n "$live_src" ] && live_disk="$(lsblk -rno PKNAME "$live_src" 2>/dev/null | head -n1)"
+    fi
+    local name size model
+    while read -r name size model; do
+        [ -n "$name" ] || continue
+        [ "$name" = "$live_disk" ] && continue
+        printf '%s|%s %s\n' "/dev/$name" "$size" "$model"
+    done < <(lsblk -dpno NAME,SIZE,MODEL 2>/dev/null | grep -v '^loop')
+}
+
+# ------------------------------------------------------------------ сценарий
+main_flow() {
+    ui_msg "Rigel 1 «Orion»" "Это установщик дистрибутива Rigel (на базе Arch Linux).
+
+Что будет сделано:
+ • разметка выбранного диска: ESP 1 ГиБ → /boot, btrfs /, отдельный ext4 /home
+ • установка системы, загрузчика (systemd-boot или GRUB) и ваших приложений
+ • русский язык, раскладка Alt+Shift, снапшоты системы (snapper)
+
+ВАЖНО:
+ • после установки выньте флешку и перезагрузитесь;
+ • если в BIOS включён Secure Boot — система может не загрузиться, выключите его;
+ • данные на выбранном диске будут удалены (кроме режима ручной разметки).
+
+Rigel — независимый проект на базе Arch Linux, не связан с проектом Arch Linux."
+
+    # --- железо
+    local report; report="$(hw_report)"
+    hw_recommend >"$RIGEL_STATE_DIR/hw-recommend.env" 2>/dev/null || true
+    ui_msg "Определение железа" "$report
+
+Рекомендации подставлены автоматически — их можно изменить на следующих экранах."
+
+    # --- диск
+    local disk_items=() d size
+    while IFS='|' read -r d size; do disk_items+=("$d" "$size"); done < <(list_disks)
+    [ ${#disk_items[@]} -gt 0 ] || die "не найдено ни одного диска"
+
+    RIGEL_DISK="$(ui_menu "Выбор диска" "На каком диске установить Rigel?
+Все данные на нём будут удалены." "${disk_items[@]}")"
+    [ -n "$RIGEL_DISK" ] || die "диск не выбран"
+
+    RIGEL_PART_MODE="$(ui_radio "Разметка диска" "Как размечаем диск $RIGEL_DISK?" \
+        "auto"   "Весь диск — рекомендуется" ON \
+        "manual" "Ручная разметка (cfdisk, для опытных)" OFF)"
+
+    # --- ядро, загрузчик, GPU
+    local choice
+    choice="$(ui_radio "Ядро" "Какие ядра установить?" \
+        "linux linux-lts"             "linux + linux-lts — рекомендуется" ON \
+        "linux"                       "Только linux" OFF \
+        "linux linux-lts linux-zen"   "linux + lts + zen (отзывчивее в играх)" OFF)"
+    RIGEL_KERNELS="${choice:-linux linux-lts}"
+
+    choice="$(ui_radio "Загрузчик" "Чем загружаться?" \
+        "auto"         "Автоматически: UEFI → systemd-boot, BIOS → GRUB" ON \
+        "systemd-boot" "systemd-boot (только UEFI)" OFF \
+        "grub"         "GRUB" OFF)"
+    RIGEL_BOOTLOADER="${choice:-auto}"
+
+    choice="$(ui_radio "Драйвер видеокарты" "Что установить для GPU?" \
+        "auto"        "Определить автоматически — рекомендуется" ON \
+        "nvidia-open" "NVIDIA, открытый модуль (RTX 20xx и новее)" OFF \
+        "nvidia"      "NVIDIA, проприетарный (Pascal и старее)" OFF \
+        "mesa"        "Только свободные драйверы (AMD/Intel)" OFF)"
+    RIGEL_GPU="${choice:-auto}"
+
+    # --- рабочий стол
+    # Plasma весит больше всего остального ISO, поэтому её надо качать из сети.
+    local plasma_desc="KDE Plasma — привычный, качается из сети"
+    online || plasma_desc="[НЕТ СЕТИ — пока недоступно] KDE Plasma"
+    choice="$(ui_radio "Рабочий стол" "Что поставить в систему?" \
+        "hyprland" "Hyprland — лёгкий, ставится прямо с флешки" ON \
+        "plasma"   "$plasma_desc" OFF \
+        "both"     "Оба: Plasma по умолчанию, Hyprland в меню сеансов" OFF \
+        "minimal"  "Без рабочего стола: браузер и терминал" OFF \
+        "none"     "Чистая консоль (сервер, отладка)" OFF)"
+    RIGEL_DESKTOP="${choice:-hyprland}"
+
+    # --- приложения: две вкладки
+    RIGEL_APPS_BASE="$(ui_checklist_from_apps base)"
+    RIGEL_APPS_PRO="$(ui_checklist_from_apps pro)"
+
+    # --- пользователь и локаль
+    RIGEL_USERNAME="$(ui_input "Пользователь" "Имя пользователя:" "user")"
+    RIGEL_HOSTNAME="$(ui_input "Компьютер" "Имя компьютера:" "rigel-pc")"
+    RIGEL_TIMEZONE="$(ui_input "Часовой пояс" "Часовой пояс:" "Europe/Moscow")"
+
+    local p1 p2
+    p1="$(ui_password "Пароль" "Пароль пользователя $RIGEL_USERNAME (он же пароль root):")"
+    [ -n "$p1" ] || die "пароль не может быть пустым"
+    p2="$(ui_password "Пароль" "Повторите пароль:")"
+    [ "$p1" = "$p2" ] || die "пароли не совпадают"
+    RIGEL_USER_PASSWORD="$p1"
+    RIGEL_ROOT_PASSWORD="$p1"
+
+    RIGEL_AUTOLOGIN=0
+    local autologin_what="в систему"
+    case "$RIGEL_DESKTOP" in
+        plasma|both) autologin_what="в KDE Plasma" ;;
+        hyprland)    autologin_what="в Hyprland" ;;
+    esac
+    if ui_yesno "Автовход" "Входить $autologin_what автоматически, без пароля?
+Удобно для домашнего компьютера, небезопасно для ноутбука."; then
+        RIGEL_AUTOLOGIN=1
+    fi
+
+    # --- сеть и подтверждение
+    if online; then RIGEL_ONLINE=1; else RIGEL_ONLINE=0; fi
+
+    local summary; summary="$(print_summary)"
+    if ! ui_yesno "Подтверждение" "$summary
+
+Начать установку? Диск $RIGEL_DISK будет перезаписан."; then
+        ui_msg "Отменено" "Установка отменена, изменений не внесено."
+        exit 0
+    fi
+}
+
+write_params() {
+    mkdir -p "$(dirname "$PARAMS_FILE")"
+    umask 077
+    cat >"$PARAMS_FILE" <<EOF
+# Сгенерировано rigel-install $(date '+%Y-%m-%d %H:%M:%S')
+RIGEL_DISK='$RIGEL_DISK'
+RIGEL_PART_MODE='$RIGEL_PART_MODE'
+RIGEL_KERNELS='$RIGEL_KERNELS'
+RIGEL_BOOTLOADER='$RIGEL_BOOTLOADER'
+RIGEL_GPU='$RIGEL_GPU'
+RIGEL_DESKTOP='$RIGEL_DESKTOP'
+RIGEL_APPS_BASE='$RIGEL_APPS_BASE'
+RIGEL_APPS_PRO='$RIGEL_APPS_PRO'
+RIGEL_USERNAME='$RIGEL_USERNAME'
+RIGEL_HOSTNAME='$RIGEL_HOSTNAME'
+RIGEL_TIMEZONE='$RIGEL_TIMEZONE'
+RIGEL_USER_PASSWORD='$RIGEL_USER_PASSWORD'
+RIGEL_ROOT_PASSWORD='$RIGEL_ROOT_PASSWORD'
+RIGEL_AUTOLOGIN='$RIGEL_AUTOLOGIN'
+RIGEL_ONLINE='$RIGEL_ONLINE'
+RIGEL_LANG='ru_RU.UTF-8'
+RIGEL_KEYMAP='ru'
+EOF
+    chmod 600 "$PARAMS_FILE"
+}
+
+run_install() {
+    local engine="$INSTALLER_DIR/engine/rigel-engine.sh"
+    chmod +x "$engine" 2>/dev/null || true
+
+    if [ "$USE_TUI" = "1" ]; then
+        : >"$LOG"
+        "$engine" --config "$PARAMS_FILE" --yes >/dev/null 2>&1 &
+        local pid=$!
+        whiptail --title "Установка Rigel" --tailbox "$LOG" 24 92 || true
+        local rc=0
+        wait "$pid" || rc=$?
+        if [ "$rc" -eq 0 ]; then
+            ui_msg "Готово" "Установка завершена.
+
+Выньте флешку и выполните: reboot"
+        else
+            ui_msg "Ошибка" "Установка прервана (код $rc).
+
+Лог: $LOG
+Что делать: повторите запуск установщика — разделы можно создать заново."
+        fi
+        return "$rc"
+    fi
+
+    "$engine" --config "$PARAMS_FILE" --yes
+}
+
+require_root
+[ "$USE_TUI" = "1" ] || warn "текстовый режим интерфейса (--text)"
+main_flow
+write_params
+run_install
+rm -f "$PARAMS_FILE"

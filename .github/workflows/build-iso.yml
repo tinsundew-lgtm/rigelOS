@@ -1,0 +1,79 @@
+name: Сборка ISO Rigel
+
+# Сборка идёт целиком на серверах GitHub: локальный Linux не нужен.
+# Запуск: вкладка Actions → «Сборка ISO Rigel» → Run workflow.
+# По тегу (v1.0) ISO дополнительно прикрепляется к GitHub Release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      offline:
+        description: 'Добавить локальный репозиторий на ISO (установка без интернета)'
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: mkarchiso
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Получить исходники
+        uses: actions/checkout@v4
+
+      - name: Проверить профиль (быстрые проверки без сборки)
+        run: bash scripts/check-profile.sh
+
+      - name: Освободить место (в ISO-сборке нужно ~12 ГБ)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - name: Собрать ISO в контейнере Arch Linux
+        run: |
+          EXTRA=""
+          if [ "${{ inputs.offline }}" = "true" ]; then EXTRA="--offline"; fi
+          docker run --privileged --rm \
+            -v "$PWD:/build" -w /build \
+            -e EXTRA_ARGS="$EXTRA" \
+            archlinux:latest \
+            bash -c '
+              set -euo pipefail
+              pacman-key --init >/dev/null 2>&1 || true
+              pacman-key --populate archlinux >/dev/null 2>&1 || true
+              pacman -Sy --noconfirm archlinux-keyring >/dev/null
+              bash scripts/build-iso.sh --no-deps $EXTRA_ARGS
+            '
+
+      - name: Показать результат
+        run: ls -lh out/ && cat out/*.sha256
+
+      - name: Загрузить ISO как артефакт
+        uses: actions/upload-artifact@v4
+        with:
+          name: rigel-iso
+          path: |
+            out/*.iso
+            out/*.sha256
+          compression-level: 0
+          retention-days: 14
+
+      - name: Прикрепить ISO к релизу (при сборке по тегу)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            out/*.iso
+            out/*.sha256
+          body: |
+            Rigel 1 «Orion» — установочный образ.
+
+            Запись на флешку: Rufus (режим «DD-образ») или `sudo scripts/make-usb.sh /dev/sdX`.
+            Перед загрузкой выключите Secure Boot. Подробности — в BUILD.md.

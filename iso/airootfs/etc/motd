@@ -1,0 +1,10 @@
+
+   Rigel Linux 1 «Orion» — живая система (на базе Arch Linux)
+
+   Установка:      rigel-install
+   Своё приветствие: rigel-welcome
+   Диски:          lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINT,MODEL
+   Сеть:           nmcli device status
+
+   Логин: root (без пароля). Документация — /usr/share/doc/rigel/ (после установки пакета rigel-meta).
+

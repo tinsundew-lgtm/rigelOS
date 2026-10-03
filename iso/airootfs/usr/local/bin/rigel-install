@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Rigel 1 «Orion» — обёртка установщика для живой системы.
+#
+# Настоящий установщик (движок + модули + apps.d) лежит в
+# /usr/local/lib/rigel-installer и туда его кладёт scripts/build-iso.sh
+# из папки installer/ этого репозитория (единый источник правды).
+
+set -uo pipefail
+
+INSTALLER_DIR="${INSTALLER_DIR:-/usr/local/lib/rigel-installer}"
+
+if [ ! -x "$INSTALLER_DIR/rigel-install" ]; then
+    cat >&2 <<EOF
+Установщик Rigel не найден: $INSTALLER_DIR/rigel-install
+
+Профиль собран без scripts/build-iso.sh. Правильная сборка:
+
+    sudo scripts/build-iso.sh
+
+(скрипт сам копирует installer/ внутрь профиля и запускает mkarchiso)
+EOF
+    exit 1
+fi
+
+export INSTALLER_DIR
+exec "$INSTALLER_DIR/rigel-install" "$@"
