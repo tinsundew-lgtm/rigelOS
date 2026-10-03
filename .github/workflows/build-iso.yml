@@ -48,8 +48,9 @@ jobs:
               set -euo pipefail
               pacman-key --init >/dev/null 2>&1 || true
               pacman-key --populate archlinux >/dev/null 2>&1 || true
-              pacman -Sy --noconfirm archlinux-keyring >/dev/null
-              bash scripts/build-iso.sh --no-deps $EXTRA_ARGS
+              pacman -Sy --noconfirm archlinux-keyring >/dev/null 2>&1 || true
+              # build-iso.sh сам поставит archiso, syslinux, grub, squashfs-tools и остальное
+              bash scripts/build-iso.sh $EXTRA_ARGS
             '
 
       - name: Показать результат

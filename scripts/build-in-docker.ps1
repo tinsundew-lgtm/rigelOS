@@ -37,9 +37,9 @@ docker run --privileged --rm `
         set -euo pipefail
         pacman-key --init >/dev/null 2>&1 || true
         pacman-key --populate archlinux >/dev/null 2>&1 || true
-        pacman -Sy --noconfirm archlinux-keyring >/dev/null
-        pacman -S --noconfirm --needed base-devel >/dev/null
-        bash scripts/build-iso.sh --no-deps $EXTRA_ARGS
+        pacman -Sy --noconfirm archlinux-keyring >/dev/null 2>&1 || true
+        # зависимости сборки (archiso, syslinux, grub, squashfs-tools...) ставит сам build-iso.sh
+        bash scripts/build-iso.sh $EXTRA_ARGS
     '
 
 Write-Host "==> ISO в: $repoRoot\out\"

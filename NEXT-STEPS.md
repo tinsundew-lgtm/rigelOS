@@ -25,32 +25,49 @@
 
 ## Что осталось (по приоритету)
 
-1. **Довести валидатор до нуля ошибок** (полчаса работы):
-   - `get_var`/`get_arr` переписаны на разбор `profiledef.sh` через `sed` — перепроверить;
-   - проверка pacman-хука: `Exec` смотреть по последнему аргументу (готово, перепроверить).
-2. **KDE Plasma в установщике** (ваша правка): `installer/lib/packages.sh` → `desktop_packages()`
-   для `RIGEL_DESKTOP=plasma|hyprland|both`, `installer/lib/post.sh` → включение `sddm`
-   и автовход в Plasma, экран выбора DE в `installer/rigel-install`, тесты в
-   `installer/tests/logic-test.sh`.
-3. **Обновить PLAN.md** (раздел 7.1/7.2) под настоящий профиль и Plasma.
-4. **Собрать первый ISO** и записать на флешку.
+✅ Валидатор профиля — 0 ошибок (проверка CRLF переписана на сравнение байтов:
+   grep в Git Bash давал ложные срабатывания; порядок проверки зависимостей в сборке исправлен).
+✅ KDE Plasma добавлена: `RIGEL_DESKTOP=hyprland|plasma|both|minimal|none`, SDDM + автовход,
+   экран выбора в TUI, отдельные тесты. Всего 57 логических тестов — все проходят.
+✅ PLAN.md обновлён (разделы 7.1–7.3, 7.8, статус, открытые вопросы).
+✅ Git-репозиторий создан, первый коммит сделан (61 файл).
+✅ Исправлена ошибка CI-сборки: контейнер запускался с `--no-deps` и без archiso.
+
+⏳ **Осталось одно: собрать сам ISO.** На этом компьютере нет ни Linux, ни Docker Desktop,
+   ни WSL-дистрибутива, ни QEMU — локально .iso собрать нечем. Ближайший путь — GitHub Actions:
+   своего Linux он не требует.
 
 ---
 
-## Команды на завтра
+## Как получить ISO (главный оставшийся шаг)
+
+Git-репозиторий уже создан, первый коммит сделан. Осталось залить его на GitHub —
+ISO соберётся на их серверах, ваш Linux для этого не нужен.
 
 ```powershell
-# 0. Проверить всё, ничего не собирая (работает в Windows, Git Bash)
+# 1. Создайте на github.com пустой репозиторий (без README), например:
+#    https://github.com/ВАШ_ЛОГИН/rigel
+
+# 2. Залейте проект (подставьте свой логин):
+cd 'C:\tinSundew\arch base distribution'
+git remote add origin https://github.com/ВАШ_ЛОГИН/rigel.git
+git push -u origin main
+
+# 3. На GitHub: вкладка Actions → «Сборка ISO Rigel» → Run workflow
+#    Через 25–35 минут в разделе Artifacts появится rigel-iso (~1.5 ГиБ).
+#    Хотите прикрепить ISO к релизу — соберите по тегу:
+git tag v1.0
+git push --tags
+```
+
+```powershell
+# Проверить проект перед пушем (ничего не собирает, работает в Windows)
 bash scripts/verify-all.sh
 ```
 
 ```powershell
-# Способ 1 — без своего Linux: залить проект на GitHub,
-# Actions → «Сборка ISO Rigel» → Run workflow → скачать артефакт rigel-iso
-```
-
-```powershell
-# Способ 2 — Docker Desktop (Windows), ISO окажется в out\
+# Способ 2 — Docker Desktop (Windows): ISO окажется в out\
+# Сейчас Docker в системе не установлен — сначала поставьте Docker Desktop (бэкенд WSL2).
 pwsh -File scripts\build-in-docker.ps1
 ```
 
