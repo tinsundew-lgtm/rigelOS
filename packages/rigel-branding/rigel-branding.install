@@ -1,0 +1,8 @@
+post_install() {
+  echo ":: Rigel Linux 1 «Orion» установлен."
+  echo ":: Запустите fastfetch, чтобы увидеть логотип."
+}
+
+post_upgrade() {
+  post_install
+}

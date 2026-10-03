@@ -1,0 +1,44 @@
+# Maintainer: Rigel Linux <https://github.com/tinSundew/rigel>
+#
+# rigel-branding — идентификация дистрибутива в системе.
+# Устанавливает os-release, issue, motd, ASCII-логотип для fastfetch,
+# обои рабочего стола.
+# Зависимости нет — файлы статические.
+
+pkgname=rigel-branding
+pkgver=1.0
+pkgrel=1
+pkgdesc='Rigel Linux branding: os-release, issue, motd, logo'
+arch=('any')
+url='https://github.com/tinSundew/rigel'
+license=('GPL3')
+depends=()
+makedepends=()
+install=rigel-branding.install
+
+source=(
+  'os-release'
+  'issue'
+  'motd'
+  'logo.txt'
+  'backgrounds/rigel.png'
+)
+
+sha256sums=('SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP')
+
+package() {
+  # /etc — идентификация системы
+  install -Dm644 os-release "${pkgdir}/etc/os-release"
+  install -Dm644 issue      "${pkgdir}/etc/issue"
+  install -Dm644 motd       "${pkgdir}/etc/motd"
+
+  # /usr/share — логотип для fastfetch
+  install -Dm644 logo.txt "${pkgdir}/usr/share/rigel/logo.txt"
+
+  # /usr/share/backgrounds — обои
+  install -Dm644 backgrounds/rigel.png "${pkgdir}/usr/share/backgrounds/rigel/default.png"
+}

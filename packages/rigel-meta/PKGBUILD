@@ -1,0 +1,24 @@
+# Maintainer: Rigel Linux <https://github.com/tinSundew/rigel>
+#
+# rigel-meta — метапакет: зависит от всего базового набора Rigel.
+# Установка этого пакета гарантирует, что система идентифицирует
+# себя как Rigel и имеет конфиги рабочего стола по умолчанию.
+
+pkgname=rigel-meta
+pkgver=1.0
+pkgrel=1
+pkgdesc='Rigel Linux meta package — depends on branding + dotfiles'
+arch=('any')
+url='https://github.com/tinSundew/rigel'
+license=('GPL3')
+depends=(
+  'rigel-branding'
+  'rigel-dotfiles'
+)
+makedepends=()
+
+package() {
+  # metapackage — не содержит файлов, только зависимости
+  install -d "${pkgdir}/usr/share/doc/rigel-meta"
+  echo "Rigel Linux 1 «Orion» metapackage" > "${pkgdir}/usr/share/doc/rigel-meta/README"
+}

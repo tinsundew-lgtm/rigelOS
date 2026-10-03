@@ -1,0 +1,10 @@
+NAME="Rigel"
+PRETTY_NAME="Rigel Linux 1 «Orion»"
+ID=rigel
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="0;36"
+HOME_URL="https://github.com/tinSundew/rigel"
+SUPPORT_URL="https://github.com/tinSundew/rigel/issues"
+BUG_REPORT_URL="https://github.com/tinSundew/rigel/issues"
+LOGO=rigel

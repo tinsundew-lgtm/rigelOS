@@ -1,0 +1,45 @@
+# Maintainer: Rigel Linux <https://github.com/tinSundew/rigel>
+#
+# rigel-dotfiles — конфиги рабочего стола по умолчанию.
+# Устанавливаются в /etc/skel/.config/ — каждый новый пользователь
+# получает готовый Hyprland, waybar, kitty.
+#
+# Если файлы уже существуют — не перезаписываются (защита от
+# затирания личных правок).
+
+pkgname=rigel-dotfiles
+pkgver=1.0
+pkgrel=1
+pkgdesc='Rigel default dotfiles: Hyprland, waybar, kitty, bash'
+arch=('any')
+url='https://github.com/tinSundew/rigel'
+license=('GPL3')
+depends=(rigel-branding)
+makedepends=()
+
+source=(
+  'skel/.bash_profile'
+  'skel/.config/hypr/hyprland.conf'
+  'skel/.config/waybar/config.jsonc'
+  'skel/.config/waybar/style.css'
+  'skel/.config/kitty/kitty.conf'
+)
+
+sha256sums=('SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP')
+
+package() {
+  # /etc/skel — шаблон для новых пользователей
+  install -Dm644 skel/.bash_profile "${pkgdir}/etc/skel/.bash_profile"
+  install -Dm644 skel/.config/hypr/hyprland.conf "${pkgdir}/etc/skel/.config/hypr/hyprland.conf"
+
+  # waybar
+  install -Dm644 skel/.config/waybar/config.jsonc "${pkgdir}/etc/skel/.config/waybar/config.jsonc"
+  install -Dm644 skel/.config/waybar/style.css "${pkgdir}/etc/skel/.config/waybar/style.css"
+
+  # kitty
+  install -Dm644 skel/.config/kitty/kitty.conf "${pkgdir}/etc/skel/.config/kitty/kitty.conf"
+}
