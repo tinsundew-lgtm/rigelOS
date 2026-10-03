@@ -9,7 +9,7 @@
 iso_name="rigel"
 iso_label="RIGEL_1_ORION"
 iso_publisher="Rigel Linux <https://github.com/tinSundew/rigel>"
-iso_application="Rigel Live/Install (Arch Linux based)"
+iso_application="Rigel Live/Install"
 iso_version="1.0"
 install_dir="rigel"
 buildmodes=('iso')

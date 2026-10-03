@@ -82,11 +82,11 @@ step_enabled() { [ -z "$ONLY_STEP" ] || [ "$ONLY_STEP" = "$1" ]; }
 # ------------------------------------------------------------------ этапы
 step_preflight() {
     ok "проверка окружения"
-    have pacstrap || die "не найден pacstrap — вы не в live-окружении Arch ISO"
+    have pacstrap || die "не найден pacstrap — вы не в live-окружении Rigel"
     have sgdisk   || die "не найден sgdisk (пакет gptfdisk)"
     have arch-chroot || die "не найден arch-chroot (пакет arch-install-scripts)"
     have genfstab || die "не найден genfstab"
-    [ -d /run/archiso ] || warn "похоже, это не официальная live-среда Arch ISO"
+    [ -d /run/archiso ] || warn "похоже, это не официальная live-среда Rigel"
 
     if is_uefi; then ok "прошивка: UEFI"; else warn "прошивка: BIOS (legacy)"; fi
     local sb; sb="$(detect_secureboot)"
