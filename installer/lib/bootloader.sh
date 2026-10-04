@@ -87,15 +87,12 @@ EOF
 
 install_grub() {
     ok "устанавливаем GRUB"
-    chroot_run "pacman -S --needed --noconfirm grub efibootmgr os-prober" || die "не удалось установить grub"
+    chroot_run "pacman -S --needed --noconfirm grub efibootmgr" || die "не удалось установить grub"
 
     local stage="$RIGEL_STATE_DIR/stage-grub.sh"
     make_stage_script "$stage" "grub"
     if is_uefi; then
         cat >>"$stage" <<'EOF'
-# Сначала стандартная запись NVRAM, затем fallback-путь для прошивок,
-# которые не сохраняют/не показывают запись производителя.
-grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Rigel --recheck
 grub-install --target=x86_64-efi --efi-directory=/boot --removable --recheck
 EOF
     else
@@ -104,15 +101,10 @@ grub-install --target=i386-pc --recheck $RIGEL_DISK
 EOF
     fi
     cat >>"$stage" <<EOF
-sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=3/' /etc/default/grub || true
-sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/' /etc/default/grub || true
-grep -q 'nvidia_drm.modeset=1' /etc/default/grub || case "$RIGEL_GPU" in
-    nvidia|nvidia-open) sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 nvidia_drm.modeset=1"/' /etc/default/grub ;;
-esac
 grub-mkconfig -o /boot/grub/grub.cfg
 EOF
     run_target_script "$stage"
-    ok "GRUB установлен и настроен"
+    ok "GRUB установлен, конфиг создан"
 }
 
 # Что реально лежит на ESP — базовая проверка, что система загрузится
