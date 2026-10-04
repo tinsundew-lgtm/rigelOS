@@ -73,7 +73,7 @@ scripts/build-iso.sh
  ├── [--offline] складывает пакеты в iso/airootfs/usr/local/share/rigel/repo/
  ├── mkarchiso -v -w /tmp/rigel-work -o out/ iso/
  └── проверяет в готовом ISO: airootfs.sfs, vmlinuz-linux, initramfs-linux.img,
-     EFI/BOOT/BOOTx64.EFI, loader/loader.conf
+     EFI/BOOT/BOOTx64.EFI
 ```
 
 Результат: `out/rigel-1.0-x86_64.iso` и `out/rigel-1.0-x86_64.iso.sha256`.
@@ -143,7 +143,7 @@ sudo scripts/make-usb.sh /dev/sdX out/rigel-1.0-x86_64.iso
 | На флешке `rigel-install: не найден установщик` | ISO собран без `scripts/build-iso.sh` — соберите правильно |
 | Нет интернета при установке | Установка идёт из сети. Соберите с `--offline`, чтобы работал локальный набор |
 | Чёрный экран после выбора «Живая среда Hyprland» | Вероятно, проприетарный драйвер NVIDIA: в live-режиме используйте пункт 1 (установка) — установщик сам поставит нужный драйвер |
-| Хочу Plasma в живой среде | Добавьте `plasma-desktop`, `konsole`, `sddm`, `xdg-desktop-portal-kde` в `iso/packages.x86_64` и включите `sddm` в `rigel-live-setup` (в установленной системе Plasma уже доступна как выбор DE) |
+| Хочу GNOME в живой среде | GNOME не влезает в ISO (~2+ ГиБ). Выберите при установке «GNOME» или «Оба» — установщик скачает его из сети. На флешке доступен Hyprland |
 
 ---
 
