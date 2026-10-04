@@ -31,7 +31,6 @@ req_files=(
     "profiledef.sh"
     "pacman.conf"
     "packages.x86_64"
-    "efiboot/loader/loader.conf"
     "syslinux/syslinux.cfg"
     "grub/grub.cfg"
     "airootfs/etc/locale.gen"
@@ -92,9 +91,8 @@ grep -q '^kernel_params_x86_64=' "$PROFILE/profiledef.sh" \
 for mode in $BOOTMODES; do
     case "$mode" in
         bios.syslinux)      [ -f "$PROFILE/syslinux/syslinux.cfg" ] && ok "bootmode $mode → syslinux/syslinux.cfg" || err "bootmode $mode, но нет syslinux/syslinux.cfg" ;;
-        uefi.systemd-boot)  [ -f "$PROFILE/efiboot/loader/loader.conf" ] && ok "bootmode $mode → efiboot/loader/loader.conf" || err "bootmode $mode, но нет efiboot/" ;;
         uefi.grub)          [ -f "$PROFILE/grub/grub.cfg" ] && ok "bootmode $mode → grub/grub.cfg" || err "bootmode $mode, но нет grub/grub.cfg" ;;
-        *) err "неизвестный bootmode: $mode (допустимо bios.syslinux, uefi.systemd-boot, uefi.grub)" ;;
+        *) err "неизвестный bootmode: $mode (допустимо bios.syslinux, uefi.grub)" ;;
     esac
 done
 
@@ -140,7 +138,7 @@ for aur in paru yay aura trizen pamac pacaur; do
 done
 
 # ядра из записей загрузчика должны быть в списке пакетов
-KERNELS="$(grep -rhoE 'vmlinuz-[a-z0-9-]+' "$PROFILE/efiboot" "$PROFILE/syslinux" "$PROFILE/grub" 2>/dev/null | sort -u | sed 's/^vmlinuz-//')"
+KERNELS="$(grep -rhoE 'vmlinuz-[a-z0-9-]+' "$PROFILE/syslinux" "$PROFILE/grub" 2>/dev/null | sort -u | sed 's/^vmlinuz-//')"
 if [ -n "$KERNELS" ]; then
     for k in $KERNELS; do
         grep -qx "$k" "$PKG_FILE" && ok "ядро $k есть в packages.x86_64" || err "загрузчик ссылается на ядро $k, но пакета $k нет в списке"
@@ -149,25 +147,17 @@ else
     warn "в конфигах загрузчиков не найдено vmlinuz-* — проверьте записи"
 fi
 
-# --------------------------------------------------------- 4. загрузчики
-section "4. Конфиги загрузчиков"
-for f in "$PROFILE"/efiboot/loader/entries/*.conf; do
-    [ -f "$f" ] || { err "нет ни одной записи systemd-boot в efiboot/loader/entries/"; break; }
-    name="$(basename "$f")"
-    grep -q "^linux" "$f" && ok "запись $name: есть linux" || err "запись $name: нет строки linux"
-    grep -q "^initrd" "$f" && ok "запись $name: есть initrd" || err "запись $name: нет строки initrd"
-    grep -q "archisobasedir=%INSTALL_DIR%" "$f" || err "запись $name: нет archisobasedir=%INSTALL_DIR%"
+# Проверяем UEFI GRUB live ISO: он должен загружать оба ядра и искать носитель по UUID.
+GRUB_CFG="$PROFILE/grub/grub.cfg"
+for kernel in linux linux-lts; do
+    grep -q "vmlinuz-$kernel" "$GRUB_CFG" && ok "GRUB: запись для $kernel" || err "GRUB: нет записи для $kernel"
 done
-
-if [ -f "$PROFILE/efiboot/loader/loader.conf" ]; then
-    def="$(awk '/^default/{print $2}' "$PROFILE/efiboot/loader/loader.conf")"
-    if [ -n "$def" ] && [ -f "$PROFILE/efiboot/loader/entries/$def" ]; then ok "loader.conf default=$def существует"
-    else err "loader.conf: default='$def' не совпадает ни с одним файлом в efiboot/loader/entries/"; fi
-fi
+grep -q 'archisobasedir=%INSTALL_DIR%' "$GRUB_CFG" && ok "GRUB: archisobasedir на месте" || err "GRUB: нет archisobasedir=%INSTALL_DIR%"
+grep -q 'archisosearchuuid=%ARCHISO_UUID%' "$GRUB_CFG" && ok "GRUB: поиск ISO по UUID" || err "GRUB: нет archisosearchuuid=%ARCHISO_UUID%"
 
 BAD_PATTERNS=('%boot_dir%' 'UUID=\.\.\.' 'initrfi' 'multiboot2' 'archiso-x86_64')
 for p in "${BAD_PATTERNS[@]}"; do
-    if grep -rqE "$p" "$PROFILE/efiboot" "$PROFILE/syslinux" "$PROFILE/grub" 2>/dev/null; then
+    if grep -rqE "$p" "$PROFILE/syslinux" "$PROFILE/grub" 2>/dev/null; then
         err "в конфигах загрузчиков остался мусор по шаблону: $p"
     fi
 done

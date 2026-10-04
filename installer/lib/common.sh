@@ -79,7 +79,7 @@ apply_defaults() {
     : "${RIGEL_KERNELS:=linux linux-lts}"
     : "${RIGEL_UCODE:=auto}"              # auto | intel | amd | none
     : "${RIGEL_GPU:=auto}"                # auto | nvidia-open | nvidia | mesa
-    : "${RIGEL_BOOTLOADER:=auto}"         # auto | systemd-boot | grub
+    : "${RIGEL_BOOTLOADER:=grub}"         # grub по умолчанию; systemd-boot — только при явном выборе
     : "${RIGEL_DESKTOP:=hyprland}"        # hyprland | gnome | both | minimal | none
     : "${RIGEL_APPS_BASE:=}"              # id категорий через пробел
     : "${RIGEL_APPS_PRO:=}"
@@ -89,7 +89,7 @@ apply_defaults() {
     : "${RIGEL_USE_METAPACKAGES:=auto}"   # auto | 1 | 0
     : "${RIGEL_MOUNT:=/mnt}"
     : "${RIGEL_TARGET_LABEL:=rigel}"
-    : "${RIGEL_ESP_MOUNT:=/boot}"         # systemd-boot требует ядра на ESP
+    : "${RIGEL_ESP_MOUNT:=/boot}"         # ESP: EFI-загрузчик GRUB и ядра
     : "${RIGEL_USERNAME:=user}"
     : "${RIGEL_ROOT_PASSWORD:=}"
     : "${RIGEL_USER_PASSWORD:=}"

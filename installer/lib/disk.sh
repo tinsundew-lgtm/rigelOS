@@ -2,7 +2,7 @@
 # Rigel installer — разметка диска, файловые системы, subvolumes, монтирование.
 #
 # Схема по умолчанию (PLAN.md, раздел 7.5.1):
-#   p1  ESP     1 ГиБ   FAT32  → /boot   (systemd-boot читает ядра только с ESP)
+#   p1  ESP     1 ГиБ   FAT32  → /boot   (EFI-загрузчик GRUB и ядра)
 #   p2  корень  45 ГиБ  btrfs  → /       (@ и @snapshots создаются сразу, до pacstrap)
 #   p3  /home   остаток ext4   → /home
 #   swap        4 ГиБ   файлом внутри корня

@@ -22,7 +22,7 @@ gen_fstab() {
 
 install_bootloader() {
     RIGEL_BOOTLOADER_RESOLVED="$RIGEL_BOOTLOADER"
-    [ "$RIGEL_BOOTLOADER_RESOLVED" = "auto" ] && { is_uefi && RIGEL_BOOTLOADER_RESOLVED="systemd-boot" || RIGEL_BOOTLOADER_RESOLVED="grub"; }
+    [ "$RIGEL_BOOTLOADER_RESOLVED" = "auto" ] && RIGEL_BOOTLOADER_RESOLVED="grub"
     echo "RIGEL_BOOTLOADER_RESOLVED='$RIGEL_BOOTLOADER_RESOLVED'" >>"$RIGEL_MOUNT/root/rigel-target.env"
 
     case "$RIGEL_BOOTLOADER_RESOLVED" in
@@ -93,7 +93,10 @@ install_grub() {
     make_stage_script "$stage" "grub"
     if is_uefi; then
         cat >>"$stage" <<'EOF'
+# Сначала стандартная запись NVRAM, затем fallback-путь для прошивок,
+# которые не сохраняют/не показывают запись производителя.
 grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Rigel --recheck
+grub-install --target=x86_64-efi --efi-directory=/boot --removable --recheck
 EOF
     else
         cat >>"$stage" <<EOF

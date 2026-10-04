@@ -172,7 +172,7 @@ system_packages() {
     out="$out gvfs gvfs-mtp udisks2 udiskie exfatprogs"
     out="$out fastfetch inxi lshw usbutils pciutils dmidecode"
     # GRUB нужен заранее, иначе в офлайне его неоткуда взять
-    if [ "$RIGEL_BOOTLOADER" = "grub" ] || { [ "$RIGEL_BOOTLOADER" = "auto" ] && ! is_uefi; }; then
+    if [ "$RIGEL_BOOTLOADER" = "grub" ] || [ "$RIGEL_BOOTLOADER" = "auto" ]; then
         out="$out grub os-prober"
     fi
     [ "${RIGEL_TRIM:-0}" = "1" ] && out="$out util-linux"

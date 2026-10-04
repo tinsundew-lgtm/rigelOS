@@ -144,11 +144,7 @@ hw_recommend() {
     ssd="$(detect_ssd)"; fw="$(detect_firmware_mode)"
     ucode="$(detect_cpu_vendor)"; [ "$ucode" = other ] && ucode="none"
 
-    case "$gpus" in
-        *nvidia*) bootloader="systemd-boot" ;;
-        *)        bootloader="systemd-boot" ;;
-    esac
-    if [ "$fw" = "BIOS" ]; then bootloader="grub"; fi
+    bootloader="grub"
 
     case "$(detect_secureboot)" in enabled) online="1" ;; *) online="auto" ;; esac
     resolved="$online"

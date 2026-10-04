@@ -14,11 +14,9 @@ iso_version="1.0"
 install_dir="rigel"
 buildmodes=('iso')
 
-# BIOS — syslinux; UEFI — systemd-boot.
-# uefi.grub конфликтует с uefi.systemd-boot (mkarchiso не позволяет оба UEFI-режима).
-# GRUB нужен только как загрузчик целевой системы — его ставит установщик.
+# BIOS — syslinux; UEFI — GRUB.
 bootmodes=('bios.syslinux'
-           'uefi.systemd-boot')
+           'uefi.grub')
 
 arch="x86_64"
 pacman_conf="pacman.conf"

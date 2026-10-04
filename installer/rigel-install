@@ -176,10 +176,9 @@ main_flow() {
     RIGEL_KERNELS="${choice:-linux linux-lts}"
 
     choice="$(ui_radio "Загрузчик" "Чем загружаться?" \
-        "auto"         "Автоматически: UEFI → systemd-boot, BIOS → GRUB" ON \
-        "systemd-boot" "systemd-boot (только UEFI)" OFF \
-        "grub"         "GRUB" OFF)"
-    RIGEL_BOOTLOADER="${choice:-auto}"
+        "grub"         "GRUB — рекомендуется (UEFI и BIOS)" ON \
+        "systemd-boot" "systemd-boot (только UEFI, экспериментально)" OFF)"
+    RIGEL_BOOTLOADER="${choice:-grub}"
 
     choice="$(ui_radio "Драйвер видеокарты" "Что установить для GPU?" \
         "auto"        "Определить автоматически — рекомендуется" ON \

@@ -146,7 +146,6 @@ check_in_iso "rigel/x86_64/airootfs.sfs"
 check_in_iso "rigel/boot/x86_64/vmlinuz-linux"
 check_in_iso "rigel/boot/x86_64/initramfs-linux.img"
 check_in_iso "EFI/BOOT/BOOTx64.EFI"
-check_in_iso "loader/loader.conf"
 [ "$missing" -eq 0 ] || die "в ISO не хватает $missing важных файлов — загрузка не сработает"
 
 # --------------------------------------------------------------------- итог

@@ -1,11 +1,11 @@
 # Rigel — план создания дистрибутива на базе Arch Linux
 
-**Версия документа:** 2.2 (профиль ISO, сборка без своего Linux, выбор рабочего стола)
+**Версия документа:** 2.3 (GRUB по умолчанию для UEFI и установленной системы)
 **Имя проекта:** **Rigel** (звезда в созвездии Ориона)
 **Схема версий:** целые номера + кодовое имя созвездия — `Rigel 1 «Orion»`, `Rigel 2 «Lyra»`, `Rigel 3 «Cygnus»`
 **Рабочая папка:** `C:\tinSundew\arch base distribution`
 
-> **Статус.** `archinstall.sh` разобран ([installer/REVIEW.md](installer/REVIEW.md) — 20 проблем, 8 критических) и переписан в движок. Готово: движок (11 этапов), TUI, определение железа, разметка (ESP 1 ГиБ → `/boot`, btrfs `@`/`@snapshots`, отдельный ext4 `/home`), два ядра + ucode, systemd-boot/GRUB, snapper, локаль RU, **выбор рабочего стола (Hyprland / KDE Plasma / оба)**, 11 категорий приложений во вкладках «Базовые»/«Про». Профиль archiso в `iso/` написан заново по эталону archiso. Сборка без своего Linux: GitHub Actions и Docker ([BUILD.md](BUILD.md)). Проверки: `bash -n` по 20 скриптам, **57 логических тестов** и валидатор профиля (`scripts/verify-all.sh`) — всё зелёное. **Осталось:** собрать ISO и проверить установку в VM, затем dotfiles, свой репозиторий + GitHub Pages, GUI-обновлятор, документация.
+**Статус.** Движок установщика, TUI, определение железа, разметка, два ядра + ucode, GRUB по умолчанию для UEFI, snapper, локаль RU и профиль archiso готовы к тестированию на реальном железе/VM. UEFI live ISO теперь использует GRUB; BIOS live ISO — syslinux. Проверки и загрузку нового ISO нужно повторить после пересборки.
 
 
 
@@ -36,10 +36,10 @@
 | Установщик | **Свой: TUI сейчас, GUI в Rigel 2** | Движок — ваш скрипт, интерфейс — `dialog`/`whiptail` |
 | Выбор приложений | Вкладки **«Базовые»** и **«Про»** | Понятные категории для новичка + отдельная вкладка для опытных |
 | Источник пакетов при установке | База — офлайн с ISO, «Про» — докачивается | ISO остаётся тонким, «Про» всегда актуально |
-| Разметка | **ESP 1 ГБ → `/boot`**, btrfs `/`, отдельный ext4 `/home` | systemd-boot читает ядра прямо с ESP; данные живут отдельно |
+| Разметка | **ESP 1 ГБ → `/boot`**, btrfs `/`, отдельный ext4 `/home` | ESP содержит EFI GRUB и ядра; данные живут отдельно |
 | Ручная разметка | Да, всегда доступна (пункт во вкладке «Про») | Плюс экран выбора «весь диск / рядом с Windows / вручную» |
 | Защита Windows | Да: предупреждения + проверка NTFS | `initialPartitioningChoice`-аналог: по умолчанию ничего не выбрано |
-| Транспорт загрузки | systemd-boot (UEFI) + syslinux/GRUB для BIOS | Два ядра в меню |
+| Транспорт загрузки | GRUB (UEFI и BIOS); syslinux только для legacy BIOS live ISO | Рекомендуется единый загрузчик, BIOS-раздел GPT для установки требует проверки |
 | Ядро | `linux` + `linux-lts` по умолчанию, в «Про» — `linux-zen`, `linux-hardened` | ucode (intel/amd) ставится автоматически |
 | Определение железа | **Автоподбор драйверов** по `lspci`/`lscpu`/`dmidecode` | Пользователь только подтверждает рекомендации |
 | Обновлятор | **Свой GUI `rigel-update`** (GTK4/libadwaita) | Прогресс, список пакетов, подсказки про `.pacnew` и откат |
@@ -75,7 +75,7 @@
 | 1 | Профиль Rigel: бренд, live-Hyprland, автологин, русская локаль | 15–20 | 4 нед |
 | 2 | Десктоп: dotfiles, waybar, хоткеи, `docs/hotkeys.md` | 15–25 | 4–5 нед |
 | 3 | Репозиторий `[rigel]` + GitHub Pages + метапакеты | 12–18 | 3–4 нед |
-| 4 | **Установщик, движок**: разметка (ESP→/boot, btrfs, ext4 /home), systemd-boot, два ядра, защита Windows — **код написан, осталось проверить на железе** | 6–10 | 2 нед |
+| 4 | **Установщик, движок**: разметка (ESP→/boot, btrfs, ext4 /home), GRUB (UEFI/BIOS), два ядра, защита Windows — **код написан, осталось проверить на железе** | 6–10 | 2 нед |
 | 5 | **Установщик, TUI**: экраны, вкладки «Базовые» и «Про», офлайн/онлайн, прогресс — **код написан, осталась полировка** | 6–10 | 2 нед |
 | 6 | Железо: `rigel-hwdetect`, NVIDIA/медиа/периферия/игры | 14–20 | 4–5 нед |
 | 7 | Снапшоты: subvolume-конвертер, `snapper`, `docs/recovery.md`, тест-ломание | 10–15 | 3 нед |
@@ -181,7 +181,7 @@ installer/                  # установщик Rigel (bash + whiptail, ра�
 | Wi-Fi/звук/тачпад | `lspci`, `lsusb`, `lsmod` | `linux-firmware`, `sof-firmware`, `alsa-ucm-conf` |
 | Тип устройства | батарея в `/sys/class/power_supply` | `tlp` (ноутбук) или `power-profiles-daemon` (ПК/ВМ) |
 | Виртуалка | `systemd-detect-virt` | гостевые пакеты, отключение лишних сервисов |
-| Прошивка | `[ -d /sys/firmware/efi ]` | UEFI → systemd-boot; BIOS → syslinux/GRUB |
+| Прошивка | `[ -d /sys/firmware/efi ]` | GRUB в UEFI или BIOS; syslinux — только для BIOS live ISO |
 | Secure Boot | `bootctl status`, `mokutil --sb-state` | предупреждение в установщике, инструкция в докладе |
 | Существующие ОС | NTFS/ESP-разделы | защита Windows, подсказка про «рядом с Windows» |
 | Диск | `/sys/block/*/rotational` | `fstrim.timer` для SSD/NVMe |
@@ -228,7 +228,7 @@ installer/                  # установщик Rigel (bash + whiptail, ра�
      rigel-install (TUI): железо → диск → ядро → приложения → пользователь
                    │
                    ▼
-     btrfs / + ext4 /home, ESP 1 ГБ → /boot, systemd-boot, два ядра
+     btrfs / + ext4 /home, ESP 1 ГБ → /boot, GRUB (UEFI/BIOS), два ядра
                    │
                    ▼
      первый запуск: Hyprland, dotfiles из /etc/skel, ru_RU, Alt+Shift, rigel-update
@@ -250,7 +250,7 @@ rigel/
 │   │   ├── root/.automated_script.sh
 │   │   ├── usr/local/bin/rigel-*  # установщик и вспомогательные скрипты
 │   │   └── usr/local/share/rigel/repo/x86_64/   # локальный репозиторий на ISO
-│   ├── efiboot/ grub/ syslinux/
+│   ├── grub/ syslinux/
 ├── installer/                     # наш установщик (см. 7.4)
 │   ├── rigel-install  selftest.sh  params.example.env  REVIEW.md
 │   ├── lib/                       # common, hwdetect, disk, packages, bootloader, post
@@ -278,7 +278,7 @@ rigel/
 | Установщик | свой: `bash` + `dialog`/`whiptail`, движок — ваш скрипт |
 | Разметка | `sgdisk`/`parted`, `mkfs.btrfs`, `mkfs.ext4`, `mkfs.fat` |
 | Диски и снапшоты | `btrfs-progs`, `snapper`, `snap-pac` |
-| Загрузчик | `systemd-boot` (+ `syslinux`/`grub` для BIOS) |
+| Загрузчик | `grub` (UEFI по умолчанию; BIOS для установленной системы требует BIOS boot partition на GPT) |
 | Обновлятор | Python + GTK4 + libadwaita, `pkexec`, `pacman-contrib` |
 | Брендинг | `plymouth`, `/etc/os-release`, `fastfetch` |
 | CI | GitHub Actions, контейнер `archlinux:latest` |
@@ -435,16 +435,15 @@ rigel/
 ### 7.1 Профиль archiso
 
 Профиль лежит в `iso/` и написан по эталону текущего `configs/releng` проекта archiso
-(сверялся с `profiledef.sh`, `efiboot`, `syslinux`, `grub` и `docs/README.profile.rst`).
+(сверялся с `profiledef.sh`, `syslinux`, `grub` и `docs/README.profile.rst`).
 
 ```
 iso/
 ├── profiledef.sh                 # имя, метка, режимы загрузки, права файлов
 ├── pacman.conf                   # для сборки: core/extra/multilib
 ├── packages.x86_64               # ПО ОДНОМУ ПАКЕТУ В СТРОКЕ
-├── efiboot/loader/               # systemd-boot (UEFI): loader.conf + записи ядер
-├── syslinux/syslinux.cfg         # BIOS (isolinux): синтаксис без menu.c32
-├── grub/grub.cfg                 # UEFI, запасной загрузчик
+├── grub/grub.cfg                 # UEFI-загрузчик GRUB
+├── syslinux/syslinux.cfg         # BIOS live ISO (legacy)
 └── airootfs/                     # то, что станет корнем живой системы
     ├── etc/{locale.gen,locale.conf,vconsole.conf,hostname,hosts,motd}
     ├── etc/mkinitcpio.conf.d/archiso.conf      # хуки archiso — без них ISO не грузится
@@ -456,8 +455,7 @@ iso/
 
 Что важно и чего легко не заметить:
 
-- `bootmodes=('bios.syslinux' 'uefi.systemd-boot' 'uefi.grub')`: BIOS грузится через syslinux
-  (в archiso для BIOS других вариантов нет), UEFI — systemd-boot, GRUB как запасной;
+- `bootmodes=('bios.syslinux' 'uefi.grub')`: BIOS грузится через syslinux, UEFI — через GRUB; оба режима проверяются после сборки;
 - **`packages.x86_64` — по одному пакету в строке**: несколько пакетов в строке pacman понимает
   как одно длинное имя, и сборка падает через 10 минут;
 - обязательны `mkinitcpio` и `mkinitcpio-archiso` — без них не собирается initramfs с хуками
@@ -568,7 +566,7 @@ installer/
 | `read -p` по ходу, вопросы нельзя пропустить/повторить | TUI: экраны, возврат, подтверждение, `--text` для отладки |
 | переменные в chroot через heredoc (пустые) | файл `/root/rigel-target.env` (0600), удаляется после установки |
 | `/dev/sda1` жёстко | `disk_part()`: NVMe/eMMC (`/dev/nvme0n1p2`) и SATA |
-| ESP 511 МиБ, `/boot/efi`, GRUB | ESP 1 ГиБ → `/boot`, systemd-boot (UEFI) или GRUB (BIOS) |
+| ESP 511 МиБ, `/boot/efi`, GRUB | ESP 1 ГиБ → `/boot`, GRUB (UEFI/BIOS) |
 | всё в один ext4, `/home` = 60 ГиБ | btrfs `/` с `@`/`@snapshots` + отдельный ext4 `/home` |
 | одно ядро, без microcode | `linux` + `linux-lts` (или zen/hardened), `intel-ucode`/`amd-ucode` в записи загрузчика |
 | `echo` вместо `locale.gen` | корректные `locale.gen`, `locale.conf`, `vconsole.conf` (RU + Alt+Shift) |
@@ -632,7 +630,7 @@ p3  home     остаток ext4    → /home
 ```
 
 Правила:
-- ESP **обязательно** ≥ 512 МБ (у нас 1 ГБ) и всегда монтируется в `/boot`, потому что systemd-boot ищет ядра там;
+- ESP ≥ 512 МБ (у нас 1 ГБ) монтируется в `/boot` для EFI GRUB и файлов ядра;
 - если пользователь выбирает «рядом с Windows»: не трогаем существующий ESP, добавляем свои разделы, пишем загрузчик в существующий ESP, предупреждаем про размер и про флаг `boot`;
 - если ESP меньше нужного — предупреждение и предложение увеличить;
 - ручная разметка: `cfdisk`/`parted`, затем проверка точек монтирования перед продолжением;
@@ -862,7 +860,7 @@ sudo scripts/make-usb.sh /dev/sdX out/rigel-1.0-x86_64.iso     # спросит 
 **Rigel 1 «Orion»** готов, когда:
 
 - ISO грузится в UEFI и BIOS, live-Hyprland с автологином, русская локаль и раскладка;
-- установщик-«движок» ставит систему на диск: ESP 1 ГБ → `/boot`, btrfs `/` с `@`/`@snapshots`, отдельный ext4 `/home`, systemd-boot, два ядра;
+- установщик-«движок» ставит систему на диск: ESP 1 ГБ → `/boot`, btrfs `/` с `@`/`@snapshots`, отдельный ext4 `/home`, GRUB (UEFI/BIOS), два ядра;
 - установщик-TUI: 10 экранов, вкладки приложений, автоподбор драйверов, защита Windows;
 - `rigel-update` обновляет систему мышкой;
 - снапшоты и откат проверены намеренной поломкой;
