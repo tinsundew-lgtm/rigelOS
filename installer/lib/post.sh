@@ -56,6 +56,26 @@ systemctl enable NetworkManager
 systemctl enable bluetooth 2>/dev/null || true
 [ "${RIGEL_TRIM:-0}" = "1" ] && systemctl enable fstrim.timer
 
+# ---------------------------------------------------------------- SDDM
+systemctl enable sddm
+
+# ---------------------------------------------------------------- автовход Hyprland (опционально)
+if [ "${RIGEL_AUTOLOGIN:-0}" = "1" ]; then
+    mkdir -p /etc/systemd/system/getty@tty1.service.d
+    cat >/etc/systemd/system/getty@tty1.service.d/autologin.conf <<AUTOLOGIN
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin $RIGEL_USERNAME --noclear %I \$TERM
+AUTOLOGIN
+
+    cat >"/home/$RIGEL_USERNAME/.bash_profile" <<'PROFILE'
+if [ -z "${WAYLAND_DISPLAY:-}" ] && [ "$(tty)" = "/dev/tty1" ]; then
+    exec Hyprland
+fi
+PROFILE
+    chown "$RIGEL_USERNAME:$RIGEL_USERNAME" "/home/$RIGEL_USERNAME/.bash_profile"
+fi
+
 # ---------------------------------------------------------------- snapper
 if [ "$RIGEL_ROOT_FS" = "btrfs" ] && command -v snapper >/dev/null 2>&1; then
     snapper -c root create-config / || true
@@ -71,10 +91,19 @@ fi
 
 # ---------------------------------------------------------------- initramfs
 mkinitcpio -P
+
 echo "SYSTEM OK"
 STAGEEOF
 
+    # Установка rigel-yt (ютуб-плеер) в целевую систему
+    local yt_src="$INSTALLER_DIR/lib/rigel-yt.sh"
+    if [ -f "$yt_src" ]; then
+        install -Dm755 "$yt_src" "$RIGEL_MOUNT/usr/local/bin/rigel-yt"
+        ok "ютуб-плеер установлен: /usr/local/bin/rigel-yt"
+    fi
+
     RIGEL_ROOT_FS="$RIGEL_ROOT_FS" RIGEL_TRIM="${RIGEL_TRIM:-0}" \
+        RIGEL_AUTOLOGIN="${RIGEL_AUTOLOGIN:-0}" \
         run_target_script "$stage"
     ok "система настроена: локаль $RIGEL_LANG, раскладка $RIGEL_KEYMAP, зона $RIGEL_TIMEZONE"
 }

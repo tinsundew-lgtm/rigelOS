@@ -1,0 +1,220 @@
+#!/usr/bin/env bash
+# Rigel YouTube Player — поиск и просмотр видео в стиле «простое приложение».
+#
+# Зависимости: mpv yt-dlp fzf jq
+#
+# Установка:
+#   sudo install -m 755 scripts/rigel-yt /usr/local/bin/rigel-yt
+#
+# Использование:
+#   rigel-yt                        # интерактивный поиск
+#   rigel-yt запрос                 # сразу искать «запрос»
+
+# Перенаправляем на основной скрипт в установленной системе.
+# При разработке можно запускать напрямую:
+#   bash installer/lib/rigel-yt.sh ...
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RIGEL_YT="${SCRIPT_DIR}/../installer/lib/rigel-yt.sh"
+
+if [ -f "$RIGEL_YT" ]; then
+    exec bash "$RIGEL_YT" "$@"
+else
+    # Если скрипт уже установлен в /usr/local/bin — запускаем напрямую
+    set -uo pipefail
+
+    # ---------------------------------------------------------------- проверка зависимостей
+    __check_deps() {
+        local missing=()
+        for cmd in mpv yt-dlp fzf jq; do
+            if ! command -v "$cmd" &>/dev/null; then
+                missing+=("$cmd")
+            fi
+        done
+        if [ ${#missing[@]} -gt 0 ]; then
+            printf 'Ошибка: не найдены зависимости: %s\n' "${missing[*]}" >&2
+            printf 'Установите: sudo pacman -S mpv yt-dlp fzf jq\n' >&2
+            exit 1
+        fi
+    }
+
+    # ---------------------------------------------------------------- поиск видео
+    __search() {
+        local query="$1"
+        yt-dlp \
+            --default-search "ytsearch10:${query}" \
+            --flat-playlist \
+            --dump-json \
+            --no-playlist \
+            --no-warnings \
+            2>/dev/null |
+            jq -c '{id, title, author: .channel, duration: (.duration // 0), url: .original_url}' 2>/dev/null
+    }
+
+    # ---------------------------------------------------------------- формат времени
+    __fmt_duration() {
+        local sec="${1:-0}" h m s
+        h=$((sec / 3600))
+        m=$(((sec % 3600) / 60))
+        s=$((sec % 60))
+        printf '%d:%02d:%02d' "$h" "$m" "$s"
+    }
+
+    # ---------------------------------------------------------------- показать результаты через fzf
+    __fzf_picker() {
+        local data="$1" header="$2" selected
+        selected="$(
+            printf '%s\n' "$data" |
+                fzf \
+                    --ansi \
+                    --no-sort \
+                    --cycle \
+                    --header "$header" \
+                    --with-nth=2.. \
+                    --delimiter='|' \
+                    --preview 'printf "%s\n" "▶ {2}" "Автор: {3}" "⏱ {4}"' \
+                    --preview-window=bottom:4:wrap
+        )"
+        if [ -n "$selected" ]; then
+            printf '%s\n' "$selected" | cut -d'|' -f1
+        fi
+    }
+
+    # ---------------------------------------------------------------- показать результаты нумерованным списком
+    __numbered_picker() {
+        local data="$1"
+        local lines=() choice
+
+        while IFS= read -r line; do
+            lines+=("$line")
+        done <<< "$data"
+
+        if [ ${#lines[@]} -eq 0 ]; then
+            printf 'Ничего не найдено.\n' >&2
+            return 1
+        fi
+
+        printf '\n'
+        for entry in "${lines[@]}"; do
+            local num title author dur
+            num="$(printf '%s' "$entry" | cut -d'|' -f1)"
+            title="$(printf '%s' "$entry" | cut -d'|' -f2)"
+            author="$(printf '%s' "$entry" | cut -d'|' -f3)"
+            dur="$(printf '%s' "$entry" | cut -d'|' -f4)"
+            printf '  %2s. %s\n' "$num" "$title"
+            printf '       ├─ Автор: %s\n' "$author"
+            printf '       └─ ⏱ %s\n' "$dur"
+        done
+        printf '\n'
+
+        read -rp "Выберите номер (1-${#lines[@]}, 0 — выход): " choice
+        choice="${choice:-0}"
+        if [ "$choice" -ge 1 ] 2>/dev/null && [ "$choice" -le "${#lines[@]}" ] 2>/dev/null; then
+            local idx=$((choice - 1))
+            printf '%s\n' "${lines[$idx]}" | cut -d'|' -f1
+        else
+            return 1
+        fi
+    }
+
+    # ---------------------------------------------------------------- воспроизведение
+    __play() {
+        local video_id="$1" url
+        case "$video_id" in
+            *youtube.com/*|*youtu.be/*|*yt.artemis*) url="$video_id" ;;
+            *) url="https://youtube.com/watch?v=${video_id}" ;;
+        esac
+
+        printf '\n▶ Воспроизведение…\n'
+        printf '  URL: %s\n' "$url"
+        printf '  (закройте mpv или нажмите q для возврата)\n\n'
+
+        mpv \
+            --profile=ytdl \
+            --ytdl-format='bestvideo[height<=?1080]+bestaudio/best' \
+            --no-video-rendering \
+            --save-position-on-quit \
+            --keep-open=no \
+            --term-playing-msg='▶ Название: ${media-title}' \
+            --term-status-msg='⏱ ${time-pos}/${duration}' \
+            --quiet \
+            "$url"
+    }
+
+    # ---------------------------------------------------------------- главный цикл
+    __main_loop() {
+        local initial_query="${1:-}"
+
+        while true; do
+            local query="$initial_query"
+            initial_query=
+
+            if [ -z "$query" ]; then
+                printf '\n═══════════════════════════════════════════════\n'
+                printf '  Rigel YouTube Player\n'
+                printf '═══════════════════════════════════════════════\n'
+                read -rp " Что ищем на YouTube? (пусто — выход) " query
+                printf '\n'
+            fi
+
+            query="${query## }"
+            query="${query%% }"
+            if [ -z "$query" ]; then
+                printf 'До свидания!\n'
+                break
+            fi
+
+            printf 'Ищем: %s …\n' "$query"
+            local results
+            results="$(__search "$query")"
+
+            if [ -z "$results" ]; then
+                printf 'По запросу «%s» ничего не найдено.\n' "$query" >&2
+                sleep 1
+                continue
+            fi
+
+            local entries=()
+            while IFS= read -r item; do
+                local id title author duration url dur_fmt
+                id="$(printf '%s' "$item" | jq -r '.id // ""')"
+                title="$(printf '%s' "$item" | jq -r '.title // "—"')"
+                author="$(printf '%s' "$item" | jq -r '.author // "—"')"
+                duration="$(printf '%s' "$item" | jq -r '.duration // 0')"
+                title="$(printf '%s' "$title" | tr -d '\n\r' | head -c 100)"
+                author="$(printf '%s' "$author" | tr -d '\n\r' | head -c 50)"
+                dur_fmt="$(__fmt_duration "$duration")"
+                entries+=("${id}|${title}|${author}|${dur_fmt}")
+            done <<< "$results"
+
+            local chosen_id
+            if command -v fzf &>/dev/null; then
+                local fzf_data
+                fzf_data="$(printf '%s\n' "${entries[@]}")"
+                if [ "${#entries[@]}" -gt 0 ]; then
+                    chosen_id="$(
+                        __fzf_picker "$fzf_data" "Результаты поиска: ${query}  |  ↑↓ — навигация, Enter — выбор, q — выход"
+                    )"
+                fi
+            else
+                local picker_data
+                picker_data="$(printf '%s\n' "${entries[@]}")"
+                chosen_id="$(__numbered_picker "$picker_data")" || true
+            fi
+
+            [ -z "$chosen_id" ] && continue
+
+            __play "$chosen_id"
+
+            printf '\n═══════════════════════════════════════════════\n'
+            local again
+            read -rp " Ещё раз? (Enter — новый поиск, n — выход) " again
+            case "$again" in
+                n|N|q|Q|exit|no) printf 'До свидания!\n'; break ;;
+                *) continue ;;
+            esac
+        done
+    }
+
+    __check_deps
+    __main_loop "$@"
+fi

@@ -121,12 +121,18 @@ fs_packages() {
     printf '%s' "btrfs-progs e2fsprogs dosfstools exfatprogs ntfs-3g gptfdisk parted"
 }
 
+hyprland_packages() {
+    printf '%s' "hyprland xdg-desktop-portal-hyprland hyprpaper waybar fuzzel"
+}
+
 system_packages() {
     local out
     out="base base-devel sudo efibootmgr networkmanager network-manager-applet"
     out="$out $(kernel_packages) linux-firmware $(ucode_packages)"
     out="$out $(fs_packages)"
     out="$out vim nano micro man-db man-pages bash-completion less"
+    out="$out iwd neovim kitty zsh code sddm steam noto-fonts-emoji noto-fonts-cjk"
+    out="$out mpv yt-dlp fzf jq"
     out="$out pipewire pipewire-pulse pipewire-alsa wireplumber pavucontrol"
     out="$out polkit polkit-gnome"
     out="$out gvfs gvfs-mtp udisks2 udiskie exfatprogs"
@@ -135,6 +141,8 @@ system_packages() {
     [ "${RIGEL_TRIM:-0}" = "1" ] && out="$out util-linux"
     [ "${RIGEL_IS_LAPTOP:-0}" = "1" ] && out="$out tlp"
     [ "${RIGEL_VIRT:-none}" != "none" ] && [ "${RIGEL_VIRT:-none}" != "unknown" ] && out="$out qemu-guest-agent"
+    # Hyprland — единственный графический интерфейс
+    [ -z "${RIGEL_DESKTOP:-}" ] || [ "$RIGEL_DESKTOP" = "hyprland" ] && out="$out $(hyprland_packages)"
     printf '%s' "$(trim "$out")"
 }
 
