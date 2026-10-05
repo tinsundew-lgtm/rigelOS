@@ -31,7 +31,7 @@ bootstrap_tarball_compression=('zstd' '-c' '-T0' '--auto-threads=logical' '--lon
 # Без этих параметров mkarchiso падает на подстановке %KERNEL_PARAMS%.
 # Пустое значение = не добавлять ничего: в live-системе видно сообщения загрузки,
 # что важно при первом запуске на новом железе.
-kernel_params_x86_64=""
+kernel_params_x86_64="copytoram=n"
 
 file_permissions=(
   ["/etc/shadow"]="0:0:400"
