@@ -160,6 +160,19 @@ step_bootloader() { install_bootloader; }
 
 step_extras() { ok "дополнительных пакетов нет"; }
 
+step_aur() {
+    local aur_pkgs="${RIGEL_AUR_PACKAGES:-}"
+    [ -n "$aur_pkgs" ] || { ok "AUR-пакетов нет"; return 0; }
+    bash "$INSTALLER_DIR/../scripts/rigel-aur" "$RIGEL_MOUNT" $aur_pkgs
+}
+
+step_hermes() {
+    [ "${RIGEL_HERMES_INSTALL:-0}" = "1" ] || { ok "Hermes Agent не требуется"; return 0; }
+    ok "устанавливаем Hermes Agent"
+    chroot_run "curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | zsh" || \
+        warn "Hermes Agent не установился — проверьте сеть"
+}
+
 step_finish() {
     cleanup_target_secrets
     sync
@@ -200,6 +213,8 @@ main() {
     run_step step_post
     run_step step_bootloader
     run_step step_extras
+    run_step step_aur
+    run_step step_hermes
     run_step step_finish
 
     if [ "$RIGEL_DRY_RUN" = "1" ]; then

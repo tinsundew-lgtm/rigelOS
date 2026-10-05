@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Rigel AUR Helper — обёртка для запуска из ISO.
+#
+# Копирует rigel-aur.sh в смонтированную систему и выполняет arch-chroot.
+#
+# Использование:
+#   scripts/rigel-aur $RIGEL_MOUNT пакет1 пакет2 ...
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RIGEL_AUR_SH="${SCRIPT_DIR}/../installer/lib/rigel-aur.sh"
+
+if [ $# -lt 1 ]; then
+    echo "Ошибка: укажите точку монтирования." >&2
+    echo "Использование: $0 /mnt/arch [пакет1 пакет2 ...]" >&2
+    exit 1
+fi
+
+RIGEL_MOUNT="$1"
+shift  # остальные аргументы — пакеты
+
+if [ ! -f "$RIGEL_AUR_SH" ]; then
+    echo "Ошибка: не найден $RIGEL_AUR_SH" >&2
+    exit 1
+fi
+
+if [ ! -d "$RIGEL_MOUNT" ]; then
+    echo "Ошибка: точка монтирования $RIGEL_MOUNT не существует" >&2
+    exit 1
+fi
+
+# Копируем скрипт в целевую систему
+install -D -m 755 "$RIGEL_AUR_SH" "$RIGEL_MOUNT/usr/local/bin/rigel-aur"
+
+# Выполняем arch-chroot
+arch-chroot "$RIGEL_MOUNT" rigel-aur "$@"
