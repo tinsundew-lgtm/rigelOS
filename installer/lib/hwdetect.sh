@@ -147,13 +147,10 @@ hw_recommend() {
     bootloader="grub"
 
     case "$(detect_secureboot)" in enabled) online="1" ;; *) online="auto" ;; esac
-    resolved="$online"
 
     cat <<EOF
 # сгенерировано hwdetect $(date '+%Y-%m-%d %H:%M:%S')
 RIGEL_UCODE=$ucode
-RIGEL_GPU=$(case "$gpus" in *nvidia*) echo auto ;; *amd*) echo mesa ;; *intel*) echo mesa ;; *) echo mesa ;; esac)
-RIGEL_BOOTLOADER=$bootloader
 RIGEL_TRIM=$ssd
 RIGEL_IS_LAPTOP=$laptop
 RIGEL_VIRT=$virt

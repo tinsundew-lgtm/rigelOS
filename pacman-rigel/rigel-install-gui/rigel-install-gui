@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-# Rigel GUI Installer — обёртка для запуска sudo.
-# Устанавливается в /usr/bin/rigel-install-gui
-
-INSTALLER_DIR="${INSTALLER_DIR:-/usr/share/rigel-install-gui}"
-export INSTALLER_DIR
-exec sudo -E python3 "$INSTALLER_DIR/src/main.py" "$@"

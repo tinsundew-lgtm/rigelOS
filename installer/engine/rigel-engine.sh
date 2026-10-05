@@ -105,9 +105,16 @@ step_preflight() {
 
 step_network() {
     resolve_online
+    # Подбор зеркал по стране (только если есть сеть и reflector установлен)
+    if [ "$RIGEL_ONLINE_RESOLVED" = "1" ] && [ -n "${RIGEL_MIRROR_COUNTRY:-}" ] && have reflector; then
+        ok "настраиваю зеркала для: $RIGEL_MIRROR_COUNTRY"
+        reflector --country "$RIGEL_MIRROR_COUNTRY" --latest 10 --sort rate --save /etc/pacman.d/mirrorlist 2>/dev/null || \
+        reflector --country "$RIGEL_MIRROR_COUNTRY" --latest 5 --sort rate --save /etc/pacman.d/mirrorlist 2>/dev/null || \
+            warn "не удалось обновить зеркала через reflector"
+    fi
     write_install_pacman_conf
-    if [ "$RIGEL_ONLINE_RESOLVED" != "1" ] && [ -z "$(app_offline_packages_for "$RIGEL_APPS_BASE $RIGEL_APPS_PRO")" ]; then
-        warn "офлайн-режим и пустой набор приложений: система будет минимальной"
+    if [ "$RIGEL_ONLINE_RESOLVED" != "1" ]; then
+        warn "офлайн-режим: установка только из кэша ISO"
     fi
 }
 
@@ -141,27 +148,17 @@ step_disk_mount() {
 
 step_pacstrap() {
     pacstrap_base
-    journal_offline_plan
 }
 
 step_fstab() { gen_fstab; }
 
 step_post() {
     post_configure
-    local online_pkgs
-    online_pkgs="$(app_online_packages_for "$RIGEL_APPS_BASE $RIGEL_APPS_PRO")"
-    if [ "$RIGEL_ONLINE_RESOLVED" != "1" ] && [ -n "$online_pkgs" ]; then
-        write_offline_note "$online_pkgs"
-    fi
 }
 
 step_bootloader() { install_bootloader; }
 
-step_extras() {
-    local online_pkgs
-    online_pkgs="$(app_online_packages_for "$RIGEL_APPS_BASE $RIGEL_APPS_PRO")"
-    install_online_extras "$online_pkgs"
-}
+step_extras() { ok "дополнительных пакетов нет"; }
 
 step_finish() {
     cleanup_target_secrets

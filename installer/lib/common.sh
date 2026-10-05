@@ -68,7 +68,8 @@ apply_defaults() {
     : "${RIGEL_TIMEZONE:=Europe/Moscow}"
     : "${RIGEL_LANG:=ru_RU.UTF-8}"
     : "${RIGEL_KEYMAP:=ru}"
-    : "${RIGEL_LOCALE_MESSAGES:=ru_RU.UTF-8}"
+    : "${RIGEL_LOCALE_MESSAGES:=$RIGEL_LANG}"
+    : "${RIGEL_MIRROR_COUNTRY:=}"
     : "${RIGEL_PART_MODE:=auto}"          # auto | wipe | manual
     : "${RIGEL_ROOT_FS:=btrfs}"           # btrfs | ext4
     : "${RIGEL_HOME_MODE:=separate}"      # separate | none
@@ -78,18 +79,13 @@ apply_defaults() {
     : "${RIGEL_SWAP:=file:4G}"            # none | file:4G | partition:4G
     : "${RIGEL_KERNELS:=linux linux-lts}"
     : "${RIGEL_UCODE:=auto}"              # auto | intel | amd | none
-    : "${RIGEL_GPU:=auto}"                # auto | nvidia-open | nvidia | mesa
-    : "${RIGEL_BOOTLOADER:=grub}"         # grub по умолчанию; systemd-boot — только при явном выборе
-    : "${RIGEL_DESKTOP:=hyprland}"        # hyprland | gnome | both | minimal | none
-    : "${RIGEL_APPS_BASE:=}"              # id категорий через пробел
-    : "${RIGEL_APPS_PRO:=}"
+    : "${RIGEL_BOOTLOADER:=grub}"         # grub
     : "${RIGEL_ONLINE:=auto}"             # auto | 1 | 0
-    : "${RIGEL_AUTOLOGIN:=0}"
     : "${RIGEL_FORCE_WIPE:=0}"
     : "${RIGEL_USE_METAPACKAGES:=auto}"   # auto | 1 | 0
     : "${RIGEL_MOUNT:=/mnt}"
     : "${RIGEL_TARGET_LABEL:=rigel}"
-    : "${RIGEL_ESP_MOUNT:=/boot}"         # ESP: EFI-загрузчик GRUB и ядра
+    : "${RIGEL_ESP_MOUNT:=/boot}"         # ESP: GRUB и ядра
     : "${RIGEL_USERNAME:=user}"
     : "${RIGEL_ROOT_PASSWORD:=}"
     : "${RIGEL_USER_PASSWORD:=}"
@@ -107,8 +103,6 @@ load_params() {
 
 validate_params() {
     [ -n "${RIGEL_DISK:-}" ] || die "не указан целевой диск (RIGEL_DISK=/dev/nvme0n1)"
-    [ -n "$RIGEL_HOSTNAME" ] || die "не указано имя компьютера"
-    [ -n "$RIGEL_KERNELS" ]  || die "не выбрано ни одного ядра"
     [ -n "$RIGEL_USERNAME" ] || die "не указано имя пользователя"
     case "$RIGEL_USERNAME" in
         [a-z_][a-z0-9_-]*) : ;;
@@ -119,10 +113,6 @@ validate_params() {
     case "$RIGEL_ROOT_FS" in btrfs|ext4) : ;; *) die "RIGEL_ROOT_FS: допустимо btrfs или ext4" ;; esac
     case "$RIGEL_HOME_MODE" in separate|none) : ;; *) die "RIGEL_HOME_MODE: separate или none" ;; esac
     case "$RIGEL_PART_MODE" in auto|wipe|manual) : ;; *) die "RIGEL_PART_MODE: auto | wipe | manual" ;; esac
-    case "$RIGEL_DESKTOP" in
-        hyprland|gnome|both|minimal|none) : ;;
-        *) die "RIGEL_DESKTOP: допустимо hyprland | gnome | both | minimal | none (сейчас: $RIGEL_DESKTOP)" ;;
-    esac
 }
 
 # ------------------------------------------------------------- диски и разделы
@@ -181,12 +171,8 @@ RIGEL_LOCALE_MESSAGES='$RIGEL_LOCALE_MESSAGES'
 RIGEL_USERNAME='$RIGEL_USERNAME'
 RIGEL_ROOT_PASSWORD='$RIGEL_ROOT_PASSWORD'
 RIGEL_USER_PASSWORD='$RIGEL_USER_PASSWORD'
-RIGEL_AUTOLOGIN='$RIGEL_AUTOLOGIN'
 RIGEL_KERNELS='$RIGEL_KERNELS'
 RIGEL_UCODE='$RIGEL_UCODE'
-RIGEL_GPU='$RIGEL_GPU'
-RIGEL_DESKTOP='$RIGEL_DESKTOP'
-RIGEL_BOOTLOADER='$RIGEL_BOOTLOADER'
 RIGEL_ROOT_FS='$RIGEL_ROOT_FS'
 RIGEL_ROOT_UUID='${RIGEL_ROOT_UUID:-}'
 RIGEL_BTRFS_SUBVOL='${RIGEL_BTRFS_SUBVOL:-}'
