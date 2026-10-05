@@ -4,10 +4,7 @@
 # воспринимает как одно длинное имя и сборка падает.
 #
 # Здесь только то, что нужно САМОЙ флешке (live-система + установщик).
-#
-# Драйвер NVIDIA здесь СОЗНАТЕЛЬНО отсутствует: nvidia-open-dkms пришлось бы
-# собирать во время сборки ISO, а в live-режиме хватает nouveau/modesetting.
-# В целевую систему драйвер ставит установщик (см. installer/lib/packages.sh).
+# Пакеты целевой системы — в installer/lib/packages.sh (через pacstrap).
 
 # --- обязательное для archiso ---
 base
@@ -68,63 +65,25 @@ sof-firmware
 polkit
 polkit-gnome
 
-# --- живой рабочий стол (Hyprland) ---
-hyprland
-xdg-desktop-portal-hyprland
-xdg-desktop-portal-gtk
-hyprpaper
-hyprlock
-hypridle
-waybar
-fuzzel
-mako
-swaync
-cliphist
-wl-clipboard
-grim
-slurp
-kitty
-thunar
-file-roller
-gvfs
-gvfs-mtp
-udisks2
-udiskie
-nwg-look
-papirus-icon-theme
-ttf-jetbrains-mono-nerd
-noto-fonts
-noto-fonts-cjk
-noto-fonts-emoji
-ttf-dejavu
-brightnessctl
-playerctl
-firefox
-
-# --- графика и медиа ---
-mesa
-vulkan-icd-loader
-vulkan-tools
-libva-mesa-driver
-
 # --- загрузчики live-ISO (нужны для сборки самого ISO) ---
 syslinux
 grub
 efibootmgr
 
-# --- принтеры и то, что обещано в офлайн-наборе приложений ---
-cups
-cups-pdf
-system-config-printer
-libreoffice-fresh
-libreoffice-fresh-ru
-hunspell-ru
-mpv
-vlc
-
-# --- для будущего GUI-обновлятора rigel-update (фаза 3) ---
-python-gobject
-gtk4
-libadwaita
-pacman-contrib
-flatpak
+# --- осиное гнездо (комментируйте что не нужно) ---
+# dhcp-server
+# isc-dhcp-server
+# openssh
+# rsync
+# bind-tools
+# net-tools
+# htop
+# strace
+# lsof
+# socat
+# nmap
+# iperf
+# speedtest-cli
+# smartmontools
+# testdisk
+# photorec
